@@ -1,12 +1,15 @@
 #! /usr/bin/env python3
 
-import argparse
+## Insert local module path into sys PATH environment var.
+import os
+import sys
+# Strip binary filename and bin dir from path to get modpath.
+modpath = os.path.split(os.path.split(os.path.abspath(__file__))[0])[0]
+if modpath not in sys.path:
+    sys.path.insert(0, modpath)
+## End module path insert.
 
-import bbc.bbc as m
+import bbc.cli as cli
 
 if __name__ == '__main__':
-    print('Welcome to The Budge-Board Charts. {}'.format(m.__version__))
-    #parser = argparse.ArgumentParser()
-    #parser.add_argument('')
-    for i, (name, year, info) in enumerate(m.imdb250fileiter(), 1):
-        print('{:3} {} {} :: {}'.format(i, year, name, info))
+    cli.main()

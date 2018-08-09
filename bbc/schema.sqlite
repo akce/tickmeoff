@@ -1,0 +1,25 @@
+-- -*- mode: SQL; -*-
+-- Molly sqlite schema.
+-- Copyright (c) 2018 Acke, see LICENSE file for allowable usage.
+
+CREATE TABLE movie (
+        movieid		INTEGER PRIMARY KEY,
+        title		TEXT NOT NULL,
+        yearmade	INTEGER,
+        notes		TEXT,
+        whenadded	INTEGER NOT NULL
+        );
+
+CREATE TABLE sync (
+	syncid		INTEGER PRIMARY KEY,
+        whensynced	INTEGER UNIQUE NOT NULL
+        );
+
+CREATE TABLE rank (
+        rankid		INTEGER PRIMARY KEY,
+        indexnum	INTEGER NOT NULL,
+        movieid		INTEGER NOT NULL,
+        asat		INTEGER NOT NULL,
+        FOREIGN KEY (movieid) REFERENCES movie,
+        FOREIGN KEY (asat) REFERENCES sync(whensynced)
+        );
