@@ -4,6 +4,7 @@ import shlex
 import time
 
 from . import bbc
+from . import easter
 from . import menufuncs
 
 class Menu:
@@ -141,7 +142,11 @@ class Shell:
     def action(self, line):
         parts = shlex.split(line)
         func, args = menufuncs.getmenuitem(self.menu, parts)
-        return func(*args)
+        try:
+            return func(*args)
+        except TypeError:
+            # Small easter egg, print a funny saying inspired by Budge.
+            print(easter.getcookie())
 
 def formatsync(lastsync):
     if lastsync is None:
