@@ -5,6 +5,7 @@ __version__ = '0.1'
 import time
 import urllib.request as ur
 
+from . import mkey
 from . import dbutil
 from . import imdb
 
@@ -37,8 +38,12 @@ def dlchart(db, outfile='chart.html', charturl='https://imdb.com/chart/top'):
 def addsync(db, date):
     return dbutil.insert(db, 'INSERT INTO sync (whensynced) VALUES (?)', date)
 
-def addmovie(db, title, year, info, syncid):
-    return dbutil.insert(db, 'INSERT INTO movie (title, yearmade, notes, whenadded) VALUES (?, ?, ?, ?)', title, year, info, syncid)
+def addmkey(db, title, year):
+    m = mkey.parse(title=title, year=year)
+    return dbutil.insert(db, 'INSERT INTO mkey (string, yearmade) VALUES (?, ?)', m.string, m.year)
+
+def addmovie(db, title, year, info, syncid, mkeyid):
+    return dbutil.insert(db, 'INSERT INTO movie (title, yearmade, notes, whenadded, mkeyid) VALUES (?, ?, ?, ?, ?)', title, year, info, syncid, mkeyid)
 
 def getmovie(db, title, year):
     return dbutil.getone(db, 'SELECT * FROM movie WHERE title = ? AND yearmade = ?', title, year)
@@ -61,8 +66,9 @@ def _import(db, entries):
         if movie:
             movieid = movie['movieid']
         else:
-            movieid = addmovie(db, title, year, info, now)
-            addedmovies.append({'movieid': movieid, 'title': title, 'yearmade': year, 'notes': info, 'indexnum': i})
+            mkeyid = addmkey(db, title, year)
+            movieid = addmovie(db, title, year, info, now, mkeyid)
+            addedmovies.append({'movieid': movieid, 'title': title, 'yearmade': year, 'notes': info, 'indexnum': i, 'mkeyid': mkeyid})
         # Add a ranking.
         rankid = addrank(db, i, movieid, now)
         newrankings.append(rankid)
@@ -70,6 +76,10 @@ def _import(db, entries):
 
 def getlastsync(db):
     return dbutil.getlast(db, 'sync')
+
+def getmkey(db, mkeyid):
+    m = dbutil.getone(db, 'SELECT * FROM mkey WHERE mkeyid = ?', mkeyid)
+    return mkey.fromdb(string=m['string'], year=m['yearmade'])
 
 def getmovies(db):
     return dbutil.getall(db, 'SELECT * FROM movie')

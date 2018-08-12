@@ -22,6 +22,7 @@ class Menu:
         self._debugmenu = [
             self.filedownload,
             self.fileimport,
+            self.moviekeys,
             ]
 
     def help(self, *args, **kwargs):
@@ -73,6 +74,14 @@ class Menu:
     def fileimport(self, *args, **kwargs):
         """ DEBUG: import (only) rankings from local file. Use commit to save changes. """
         self._import(bbc.fileimport)
+
+    def moviekeys(self, *args, **kwargs):
+        """ DEBUG: List internal movie keys for movies list. """
+        movs = bbc.getmovies(self.db)
+        for m in sorted(movs, key=operator.itemgetter('title', 'yearmade')):
+            mkey = bbc.getmkey(self.db, m['mkeyid'])
+            print('({year}): {title} -> {mkey}'.format(title=m['title'], year=m['yearmade'], mkey=mkey))
+        print('{} in total'.format(len(movs)))
 
     def _import(self, func):
         """ Internal func for downloading/importing etc. """
