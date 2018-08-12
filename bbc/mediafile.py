@@ -53,15 +53,18 @@ def removebase(fulldir, basedir):
 def addmediafile(db, filename, locationid, movieid):
     return dbutil.insert(db, 'INSERT INTO mediafile (filename, locationid, movieid) VALUES (?, ?, ?)', filename, locationid, movieid)
 
-def getmediafile(db, filename):
-    return dbutil.getone(db, 'SELECT * FROM mediafile WHERE filename = ?', filename)
+def getmediafile(db, movieid=None, filename=None):
+    if movieid is not None:
+        return dbutil.getone(db, 'SELECT * FROM mediafile WHERE movieid = ?', movieid)
+    elif filename is not None:
+        return dbutil.getone(db, 'SELECT * FROM mediafile WHERE filename = ?', filename)
 
 def scanpaths(db):
     added = []
     for rootpath in getpaths(db):
         basedir = os.path.expanduser(rootpath['pathname'])
         for mov, fname, fdir in scanpath(db, basedir):
-            mf = getmediafile(db, fname)
+            mf = getmediafile(db, filename=fname)
             if mf is None:
                 # Add a subdir.
                 subdir = removebase(fdir, basedir=basedir)

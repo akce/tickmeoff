@@ -22,6 +22,7 @@ class Menu:
             self.addpath,
             self.paths,
             self.scan,
+            self.missing,
             self.rankings,
             ]
         self._debugmenu = [
@@ -80,6 +81,15 @@ class Menu:
     def _printranks(self, movs):
         for m in movs:
             print('{rank}: {title}({year}) - {notes}'.format(rank=m['indexnum'], title=m['title'], year=m['yearmade'], notes=m['notes']))
+
+    def missing(self, *args, **kwargs):
+        """ list missing media from the latest ranking """
+        miss = []
+        for r in bbc.getrankings(self.db):
+            mf = mediafile.getmediafile(self.db, movieid=r['movieid'])
+            if mf is None:
+                miss.append(r)
+        self._printranks(miss)
 
     def rankings(self, *args, **kwargs):
         """ show latest movie rankings """
