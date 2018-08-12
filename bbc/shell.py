@@ -5,7 +5,9 @@ import time
 
 from . import bbc
 from . import easter
+from . import mediafile
 from . import menufuncs
+from . import mkey
 
 class Menu:
 
@@ -17,12 +19,16 @@ class Menu:
             self.download,
             self.history,
             self.movies,
+            self.addpath,
+            self.paths,
+            self.scan,
             self.rankings,
             ]
         self._debugmenu = [
             self.filedownload,
             self.fileimport,
             self.moviekeys,
+            self.scanfile,
             ]
 
     def help(self, *args, **kwargs):
@@ -46,6 +52,30 @@ class Menu:
         for m in sorted(movs, key=operator.itemgetter('title', 'yearmade')):
             print('({year}): {title} - {notes}'.format(title=m['title'], year=m['yearmade'], notes=m['notes']))
         print('{} in total'.format(len(movs)))
+
+    def addpath(self, *args, **kwargs):
+        """ add given path to list of dirs to scan """
+        if len(args) == 1:
+            p = args[0]
+            if mediafile.getlocation(self.db, p):
+                print('already have that one')
+            else:
+                mediafile.addlocation(self.db, p)
+                self.db.commit()
+        else:
+            print('need path')
+
+    def paths(self, *args, **kwargs):
+        """ list media paths """
+        for p in mediafile.getpaths(self.db):
+            print(p['pathname'])
+
+    def scan(self, *args, **kwargs):
+        """ scan known paths for media """
+        new = mediafile.scanpaths(self.db)
+        for f in new:
+            print(f)
+        print('{} new media files added'.format(len(new)))
 
     def _printranks(self, movs):
         for m in movs:
@@ -79,9 +109,14 @@ class Menu:
         """ DEBUG: List internal movie keys for movies list. """
         movs = bbc.getmovies(self.db)
         for m in sorted(movs, key=operator.itemgetter('title', 'yearmade')):
-            mkey = bbc.getmkey(self.db, m['mkeyid'])
+            mkey = mkey.getmkey(self.db, mkeyid=m['mkeyid'])
             print('({year}): {title} -> {mkey}'.format(title=m['title'], year=m['yearmade'], mkey=mkey))
         print('{} in total'.format(len(movs)))
+
+    def scanfile(self, *args, **kwargs):
+        """ DEBUG: Scan media files from filelist.txt as if it was a filesystem. """
+        for key, filename, location in mediafile.scanfiles('filelist.txt'):
+            print('{} {}'.format(key, filename))
 
     def _import(self, func):
         """ Internal func for downloading/importing etc. """

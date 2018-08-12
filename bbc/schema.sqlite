@@ -31,3 +31,17 @@ CREATE TABLE rank (
         FOREIGN KEY (movieid) REFERENCES movie,
         FOREIGN KEY (asat) REFERENCES sync(whensynced)
         );
+
+CREATE TABLE location (
+        locationid	INTEGER PRIMARY KEY,
+        pathname	TEXT NOT NULL,
+        parentid	REFERENCES location
+        );
+
+CREATE TABLE mediafile (
+        mediafileid	INTEGER PRIMARY KEY,
+        filename	TEXT NOT NULL,
+        locationid	INTEGER NOT NULL REFERENCES location,
+        mkeyid		INTEGER REFERENCES mkey,
+        UNIQUE (locationid, filename)
+        );
