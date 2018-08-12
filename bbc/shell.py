@@ -1,10 +1,12 @@
 import operator
+import os
 import readline
 import shlex
 import time
 
 from . import bbc
 from . import easter
+from . import m3u
 from . import mediafile
 from . import menufuncs
 from . import movie
@@ -24,6 +26,7 @@ class Menu:
             self.scan,
             self.missing,
             self.rankings,
+            self.write,
             ]
         self._debugmenu = [
             self.filedownload,
@@ -94,6 +97,18 @@ class Menu:
     def rankings(self, *args, **kwargs):
         """ show latest movie rankings """
         self._printranks(bbc.getrankings(self.db))
+
+    def write(self, *args, **kwargs):
+        """ write m3u playlist file """
+        got = []
+        for r in bbc.getrankings(self.db):
+            mf = mediafile.getmediafile(self.db, movieid=r['movieid'])
+            if mf:
+                # m3u uses (label, path)
+                label = '{rank}: {title}({year}) - {notes}'.format(rank=r['indexnum'], title=r['title'], year=r['yearmade'], notes=r['notes'])
+                path = os.path.expanduser(mediafile.getpathr(self.db, mf['locationid']))
+                got.append((label, os.path.join(path, mf['filename'])))
+        m3u.write(args[0], got)
 
     def x(self, *args, **kwargs):
         """ toggle expert/debug mode """

@@ -13,6 +13,17 @@ def addlocation(db, path, baselocid=None):
 def getlocation(db, path):
     return dbutil.getone(db, 'SELECT * FROM location WHERE pathname = ?', path)
 
+def getpathr(db, locationid):
+    parts = []
+    while locationid is not None:
+        loc = dbutil.getone(db, 'SELECT * FROM location WHERE locationid = ?', locationid)
+        if loc:
+            parts.append(loc['pathname'])
+            locationid = loc['parentid']
+        else:
+            locationid = None
+    return os.path.join(*sorted(parts, reverse=True))
+
 def getpaths(db):
     """ Root media paths. """
     return dbutil.getall(db, 'SELECT * FROM location WHERE parentid IS NULL')
