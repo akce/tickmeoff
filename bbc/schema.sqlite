@@ -2,20 +2,13 @@
 -- Molly sqlite schema.
 -- Copyright (c) 2018 Acke, see LICENSE file for allowable usage.
 
-CREATE TABLE mkey (
-	mkeyid		INTEGER PRIMARY KEY,
-        string		TEXT NOT NULL,
-        yearmade	INTEGER,
-        UNIQUE (string, yearmade)
-        );
-
 CREATE TABLE movie (
         movieid		INTEGER PRIMARY KEY,
         title		TEXT NOT NULL,
         yearmade	INTEGER,
         notes		TEXT,
-        whenadded	INTEGER NOT NULL,
-        mkeyid		INTEGER REFERENCES mkey
+        mkey		TEXT NOT NULL,
+        whenadded	INTEGER NOT NULL
         );
 
 CREATE TABLE sync (
@@ -42,6 +35,6 @@ CREATE TABLE mediafile (
         mediafileid	INTEGER PRIMARY KEY,
         filename	TEXT NOT NULL,
         locationid	INTEGER NOT NULL REFERENCES location,
-        mkeyid		INTEGER REFERENCES mkey,
+        movieid		INTEGER REFERENCES movie,
         UNIQUE (locationid, filename)
         );

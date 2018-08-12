@@ -3,7 +3,7 @@ import os
 import sys
 
 from . import dbutil
-from . import mkey
+from . import movie
 
 extensions = {'.avi', '.m4v', '.mkv', '.mp4', '.mpg'}
 
@@ -26,29 +26,22 @@ def mediaiter(sysiter):
     yield from ((dirpart, filename) for dirpart, filename in sysiter if os.path.splitext(filename)[1] in extensions)
 
 def scanfiles(filename):
-    yield from scan(iterobj=fileiter(filename))
+    yield from scan(db=db, iterobj=fileiter(filename))
 
 def pathiter(path):
     for cwd, dirs, files in os.walk(path):
         for f in files:
     	    yield cwd, f
 
-def scanpath(path):
-    yield from scan(iterobj=pathiter(path))
+def scanpath(db, path):
+    yield from scan(db=db, iterobj=pathiter(path))
 
-def scan(iterobj):
+def scan(db, iterobj):
     keys = {}
     for dirpart, filepart in mediaiter(iterobj):
         title, ext = os.path.splitext(filepart)
-        try:
-            key = mkey.parse(title)
-        except ValueError:
-            print('Failed to create media key for "{}".. skipping'.format(filepart), file=sys.stderr)
-        else:
-            if key in keys:
-                print('Duplicate "{}" == "{}"'.format(keys[key], filepart), file=sys.stderr)
-            keys[key] = filepart
-            yield key, filepart, dirpart
+        for mov in movie.search(db, title):
+            yield mov, filepart, dirpart
 
 def removebase(fulldir, basedir):
     if fulldir.startswith(basedir):
@@ -57,8 +50,8 @@ def removebase(fulldir, basedir):
         endstr = fulldir
     return endstr
 
-def addmediafile(db, filename, locationid, mkeyid):
-    return dbutil.insert(db, 'INSERT INTO mediafile (filename, locationid, mkeyid) VALUES (?, ?, ?)', filename, locationid, mkeyid)
+def addmediafile(db, filename, locationid, movieid):
+    return dbutil.insert(db, 'INSERT INTO mediafile (filename, locationid, movieid) VALUES (?, ?, ?)', filename, locationid, movieid)
 
 def getmediafile(db, filename):
     return dbutil.getone(db, 'SELECT * FROM mediafile WHERE filename = ?', filename)
@@ -67,17 +60,14 @@ def scanpaths(db):
     added = []
     for rootpath in getpaths(db):
         basedir = os.path.expanduser(rootpath['pathname'])
-        for fkey, fname, fdir in scanpath(basedir):
-            dbmkey = mkey.getmkey(db, mkey=fkey)
-            # Only add path entries for things that have charted.
-            if dbmkey:
-                mf = getmediafile(db, fname)
-                if mf is None:
-                    # Add a subdir.
-                    subdir = removebase(fdir, basedir=basedir)
-                    locationid = addlocation(db, subdir, baselocid=rootpath['locationid'])
-                    # Add the mediafile entry.
-                    mf = addmediafile(db, fname, locationid, dbmkey.mkeyid)
-                    added.append(fname)
+        for mov, fname, fdir in scanpath(db, basedir):
+            mf = getmediafile(db, fname)
+            if mf is None:
+                # Add a subdir.
+                subdir = removebase(fdir, basedir=basedir)
+                locationid = addlocation(db, subdir, baselocid=rootpath['locationid'])
+                # Add the mediafile entry.
+                mf = addmediafile(db, fname, locationid, mov['movieid'])
+                added.append(fname)
     return added
 

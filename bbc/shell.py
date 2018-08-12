@@ -7,7 +7,7 @@ from . import bbc
 from . import easter
 from . import mediafile
 from . import menufuncs
-from . import mkey
+from . import movie
 
 class Menu:
 
@@ -48,7 +48,7 @@ class Menu:
 
     def movies(self, *args, **kwargs):
         """ show movie listing """
-        movs = bbc.getmovies(self.db)
+        movs = movie.getmovies(self.db)
         for m in sorted(movs, key=operator.itemgetter('title', 'yearmade')):
             print('({year}): {title} - {notes}'.format(title=m['title'], year=m['yearmade'], notes=m['notes']))
         print('{} in total'.format(len(movs)))
@@ -107,15 +107,14 @@ class Menu:
 
     def moviekeys(self, *args, **kwargs):
         """ DEBUG: List internal movie keys for movies list. """
-        movs = bbc.getmovies(self.db)
+        movs = movie.getmovies(self.db)
         for m in sorted(movs, key=operator.itemgetter('title', 'yearmade')):
-            mkey = mkey.getmkey(self.db, mkeyid=m['mkeyid'])
-            print('({year}): {title} -> {mkey}'.format(title=m['title'], year=m['yearmade'], mkey=mkey))
+            print('({year}): {title} -> {key}'.format(title=m['title'], year=m['yearmade'], key=m['mkey']))
         print('{} in total'.format(len(movs)))
 
     def scanfile(self, *args, **kwargs):
         """ DEBUG: Scan media files from filelist.txt as if it was a filesystem. """
-        for key, filename, location in mediafile.scanfiles('filelist.txt'):
+        for key, filename, location in mediafile.scanfiles(self.db, 'filelist.txt'):
             print('{} {}'.format(key, filename))
 
     def _import(self, func):

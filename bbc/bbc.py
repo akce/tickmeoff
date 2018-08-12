@@ -5,9 +5,9 @@ __version__ = '0.1'
 import time
 import urllib.request as ur
 
-from . import mkey
 from . import dbutil
 from . import imdb
+from . import movie
 
 def openurl(url):
     ## NOTE: the agent value usually affects the content format returned by the server!
@@ -38,12 +38,6 @@ def dlchart(db, outfile='chart.html', charturl='https://imdb.com/chart/top'):
 def addsync(db, date):
     return dbutil.insert(db, 'INSERT INTO sync (whensynced) VALUES (?)', date)
 
-def addmovie(db, title, year, info, syncid, mkeyid):
-    return dbutil.insert(db, 'INSERT INTO movie (title, yearmade, notes, whenadded, mkeyid) VALUES (?, ?, ?, ?, ?)', title, year, info, syncid, mkeyid)
-
-def getmovie(db, title, year):
-    return dbutil.getone(db, 'SELECT * FROM movie WHERE title = ? AND yearmade = ?', title, year)
-
 def addrank(db, position, movieid, syncid):
     return dbutil.insert(db, 'INSERT INTO rank (indexnum, movieid, asat) VALUES (?, ?, ?)', position, movieid, syncid)
 
@@ -58,13 +52,12 @@ def _import(db, entries):
     newrankings = []
     for i, (title, year, info) in enumerate(entries, 1):
         # Get an existing movie entry, create if it doesn't exist.
-        movie = getmovie(db, title, year)
-        if movie:
-            movieid = movie['movieid']
+        mov = movie.getmovie(db, title, year)
+        if mov:
+            movieid = mov['movieid']
         else:
-            mkeyid = mkey.addmkey(db, title, year)
-            movieid = addmovie(db, title, year, info, now, mkeyid)
-            addedmovies.append({'movieid': movieid, 'title': title, 'yearmade': year, 'notes': info, 'indexnum': i, 'mkeyid': mkeyid})
+            movieid = movie.addmovie(db, title, year, info, now)
+            addedmovies.append({'movieid': movieid, 'title': title, 'yearmade': year, 'notes': info, 'indexnum': i})
         # Add a ranking.
         rankid = addrank(db, i, movieid, now)
         newrankings.append(rankid)
@@ -72,9 +65,6 @@ def _import(db, entries):
 
 def getlastsync(db):
     return dbutil.getlast(db, 'sync')
-
-def getmovies(db):
-    return dbutil.getall(db, 'SELECT * FROM movie')
 
 def getrankings(db):
     asat = getlastsync(db)['whensynced']
