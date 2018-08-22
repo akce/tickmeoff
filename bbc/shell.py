@@ -26,6 +26,7 @@ class Menu:
             self.scan,
             self.missing,
             self.punted,
+            self.diffs,
             self.rankings,
             self.write,
             ]
@@ -99,6 +100,21 @@ class Menu:
         """ list movies that have been dropped from the rankings """
         for m in bbc.getpunted(self.db):
             print('{year} ({i:3}) {title}'.format(year=m['yearmade'], title=m['title'], i=m['indexnum']))
+
+    def diffs(self, *args, **kwargs):
+        """ list differences in movie rank position """
+        for m in bbc.getdiffs(self.db):
+            # Format the diff.
+            if m['diff'] is None:
+                # New entry
+                diff = '*   '
+            elif m['diff'] == 0:
+                # Unchanged.
+                diff = '    '
+            else:
+                # Diff is either positive or negative number.
+                diff = '{:+4}'.format(m['diff'])
+            print('{i:3}) {diff} {year} {title}'.format(diff=diff, year=m['yearmade'], title=m['title'], i=m['indexnum']))
 
     def rankings(self, *args, **kwargs):
         """ show latest movie rankings """

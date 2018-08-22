@@ -75,14 +75,36 @@ def gethistory(db):
     """ get the sync history """
     return dbutil.getall(db, 'SELECT * FROM sync')
 
-def getpunted(db):
+def getrankingpair(db):
     # Grab the last two sync timestamps.
+    syncold, syncnew = gethistory(db)[-2:]
+    rankold = getrankings(db, asat=syncold['whensynced'])
+    ranknew = getrankings(db, asat=syncnew['whensynced'])
+    return rankold, ranknew
+
+def getpunted(db):
     try:
-        syncold, syncnew = gethistory(db)[-2:]
+        rankold, ranknew = getrankingpair(db)
     except ValueError:
         return []
     else:
-        rankold = getrankings(db, asat=syncold['whensynced'])
-        ranknew = getrankings(db, asat=syncnew['whensynced'])
         puntedids = {m['movieid'] for m in rankold} - {m['movieid'] for m in ranknew}
         return [m for m in rankold if m['movieid'] in puntedids]
+
+def getdiffs(db):
+    try:
+        rankold, ranknew = getrankingpair(db)
+    except ValueError:
+        return
+    # Build a difflist for entries in ranknew.
+    rankolddict = {m['movieid']: m for m in rankold}
+    for m in (dict((k, n[k]) for k in n.keys()) for n in ranknew):
+        try:
+            oldm = rankolddict[m['movieid']]
+        except KeyError:
+            # New entry
+            m['diff'] = None
+        else:
+            # Calc diff.
+            m['diff'] = oldm['indexnum'] - m['indexnum']
+        yield m
