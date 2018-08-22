@@ -158,7 +158,7 @@ class Menu:
             # m3u uses (label, path)
             label = '{rank}: {title}({year}) - {notes}'.format(rank=r['indexnum'], title=r['title'], year=r['yearmade'], notes=r['notes'])
             got.append((label, path))
-        playlist.writem3u(args[0], got)
+        playlist.writem3u(config.getconfig(self.db, 'm3ufile')['value'], got)
 
     def _getrankedmedia(self):
         for r in bbc.getrankings(self.db):

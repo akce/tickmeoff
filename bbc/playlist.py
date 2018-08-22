@@ -7,10 +7,12 @@ import os
 
 def writem3u(filename, movs):
     fp = os.path.expanduser(filename)
+    destdir = os.path.dirname(fp)
+    # Ensure basedir exists.
+    os.makedirs(destdir, exist_ok=True)
     with open(fp, 'w+') as f:
         print('#EXTM3U', file=f)
         print('', file=f)
-        destdir = os.path.dirname(filename)
         for label, fullpath in movs:
             # length/duration not supported yet so hardcode -1 for now.
             print('#EXTINF:-1,{}'.format(label), file=f)
