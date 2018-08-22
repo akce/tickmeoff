@@ -5,11 +5,12 @@ import shlex
 import time
 
 from . import bbc
+from . import config
 from . import easter
-from . import m3u
 from . import mediafile
 from . import menufuncs
 from . import movie
+from . import playlist
 
 class Menu:
 
@@ -28,6 +29,9 @@ class Menu:
             self.punted,
             self.diffs,
             self.rankings,
+            self.configget,
+            self.configset,
+            self.link,
             self.write,
             ]
         self._debugmenu = [
@@ -120,17 +124,48 @@ class Menu:
         """ show latest movie rankings """
         self._printranks(bbc.getrankings(self.db))
 
+    def configget(self, *args, **kwargs):
+        """ show config settings """
+        if args:
+            # Print the requested config item.
+            key = args[0]
+            row = config.getconfig(self.db, key)
+            print('{:16} {}'.format(key, row['value']))
+        else:
+            # Print all.
+            for row in config.getallconfig(self.db):
+                print('{:16} {:16} {}'.format(row['key'], row['value'], row['description']))
+
+    def configset(self, *args, **kwargs):
+        """ set a config item """
+        key, value = args[:2]
+        config.setconfig(self.db, key, value)
+        self.db.commit()
+
+    def link(self, *args, **kwargs):
+        """ create soft links for media files """
+        got = []
+        for r, path in self._getrankedmedia():
+            # Link the parent directory using label.
+            label = '{rank}) {title} ({year})'.format(rank=r['indexnum'], title=r['title'], year=r['yearmade'], notes=r['notes'])
+            got.append((label, os.path.dirname(path)))
+        playlist.makesymlinks(config.getconfig(self.db, 'linkdir')['value'], got)
+
     def write(self, *args, **kwargs):
         """ write m3u playlist file """
         got = []
+        for r, path in self._getrankedmedia():
+            # m3u uses (label, path)
+            label = '{rank}: {title}({year}) - {notes}'.format(rank=r['indexnum'], title=r['title'], year=r['yearmade'], notes=r['notes'])
+            got.append((label, path))
+        playlist.writem3u(args[0], got)
+
+    def _getrankedmedia(self):
         for r in bbc.getrankings(self.db):
             mf = mediafile.getmediafile(self.db, movieid=r['movieid'])
             if mf:
-                # m3u uses (label, path)
-                label = '{rank}: {title}({year}) - {notes}'.format(rank=r['indexnum'], title=r['title'], year=r['yearmade'], notes=r['notes'])
                 path = os.path.expanduser(mediafile.getpathr(self.db, mf['locationid']))
-                got.append((label, os.path.join(path, mf['filename'])))
-        m3u.write(args[0], got)
+                yield r, os.path.join(path, mf['filename'])
 
     def x(self, *args, **kwargs):
         """ toggle expert/debug mode """
