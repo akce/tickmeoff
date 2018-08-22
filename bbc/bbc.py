@@ -66,10 +66,23 @@ def _import(db, entries):
 def getlastsync(db):
     return dbutil.getlast(db, 'sync')
 
-def getrankings(db):
-    asat = getlastsync(db)['whensynced']
+def getrankings(db, asat=None):
+    if asat is None:
+        asat = getlastsync(db)['whensynced']
     return dbutil.getall(db, 'SELECT r.indexnum, m.* FROM rank r jOIN movie m ON r.movieid = m.movieid WHERE r.asat = ? ORDER BY r.indexnum', asat)
 
 def gethistory(db):
     """ get the sync history """
     return dbutil.getall(db, 'SELECT * FROM sync')
+
+def getpunted(db):
+    # Grab the last two sync timestamps.
+    try:
+        syncold, syncnew = gethistory(db)[-2:]
+    except ValueError:
+        return []
+    else:
+        rankold = getrankings(db, asat=syncold['whensynced'])
+        ranknew = getrankings(db, asat=syncnew['whensynced'])
+        puntedids = {m['movieid'] for m in rankold} - {m['movieid'] for m in ranknew}
+        return [m for m in rankold if m['movieid'] in puntedids]

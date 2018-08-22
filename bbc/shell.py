@@ -25,6 +25,7 @@ class Menu:
             self.paths,
             self.scan,
             self.missing,
+            self.punted,
             self.rankings,
             self.write,
             ]
@@ -93,6 +94,11 @@ class Menu:
             if mf is None:
                 miss.append(r)
         self._printranks(miss)
+
+    def punted(self, *args, **kwargs):
+        """ list movies that have been dropped from the rankings """
+        for m in bbc.getpunted(self.db):
+            print('{year} ({i:3}) {title}'.format(year=m['yearmade'], title=m['title'], i=m['indexnum']))
 
     def rankings(self, *args, **kwargs):
         """ show latest movie rankings """
