@@ -1,50 +1,46 @@
 import operator
 import os
 import readline
-import shlex
 import time
 
 from . import bbc
 from . import config
 from . import easter
 from . import mediafile
-from . import menufuncs
+from . import menu
 from . import movie
 from . import playlist
 
-class Menu:
+class App:
 
     def __init__(self, db):
         self.db = db
-        self._debug = False
-        self._menu = [
-            self.help,
-            self.download,
-            self.history,
-            self.movies,
-            self.addpath,
-            self.paths,
-            self.scan,
-            self.missing,
-            self.punted,
-            self.diffs,
-            self.rankings,
-            self.configget,
-            self.configset,
-            self.link,
-            self.write,
-            ]
-        self._debugmenu = [
-            self.filedownload,
-            self.fileimport,
-            self.moviekeys,
-            self.scanfile,
-            ]
+        self.menu = self._makemenu()
 
-    def help(self, *args, **kwargs):
-        """ list command help """
-        for m in self:
-            print('{:10} {}'.format(m, self[m].__doc__))
+    def _makemenu(self):
+        m = menu.Menu(name='bbc')
+        m.additem(menu.CommandFunc(self.download))
+        m.additem(menu.CommandFunc(self.history))
+        m.additem(menu.CommandFunc(self.movies))
+        m.additem(menu.CommandFunc(self.addpath))
+        m.additem(menu.CommandFunc(self.paths))
+        m.additem(menu.CommandFunc(self.scan))
+        m.additem(menu.CommandFunc(self.missing))
+        m.additem(menu.CommandFunc(self.punted))
+        m.additem(menu.CommandFunc(self.diffs))
+        m.additem(menu.CommandFunc(self.rankings))
+        m.additem(menu.CommandFunc(self.configget))
+        m.additem(menu.CommandFunc(self.configset))
+        m.additem(menu.CommandFunc(self.link))
+        m.additem(menu.CommandFunc(self.write))
+        dm = menu.SubMenu(name='debug', rootmenu=m)
+        dm.additem(menu.CommandFunc(self.commit))
+        dm.additem(menu.CommandFunc(self.filedownload))
+        dm.additem(menu.CommandFunc(self.fileimport))
+        dm.additem(menu.CommandFunc(self.moviekeys))
+        dm.additem(menu.CommandFunc(self.scanfile))
+        m.additem(dm)
+        return m
 
     def download(self, *args, **kwargs):
         """ download and import listing """
@@ -167,12 +163,6 @@ class Menu:
                 path = os.path.expanduser(mediafile.getpathr(self.db, mf['locationid']))
                 yield r, os.path.join(path, mf['filename'])
 
-    def x(self, *args, **kwargs):
-        """ toggle expert/debug mode """
-        self._debug = not self._debug
-        print('debug = {}'.format(self._debug))
-
-
     def commit(self, *args, **kwargs):
         """ DEBUG: save changes to database. """
         # Adding check (in addition to the options listing above) as the command can be manually typed in as well.
@@ -208,19 +198,6 @@ class Menu:
         else:
             print('Big problem, nothing new found - contact tech support!')
 
-    def __iter__(self):
-        if self._debug:
-            menu = self._menu + self._debugmenu
-            # Only display commit if there are unsaved changes.
-            if self.db.dirty:
-                menu.append(self.commit)
-        else:
-            menu = self._menu
-        return (m.__name__ for m in menu)
-
-    def __getitem__(self, key):
-        return getattr(self, key)
-
 class DictReadlineCompleter:
 
     def __init__(self, menu):
@@ -229,10 +206,10 @@ class DictReadlineCompleter:
     def __call__(self, text, state):
         if state == 0:
             ## Build options list for text.
-            # Grab list of completions for text.
-            parts = shlex.split(readline.get_line_buffer())
+            # Grab the full line.
+            line = readline.get_line_buffer()
             # Append a space char saving user from having to add it for single completions.
-            self.options = ['{} '.format(x) for x in menufuncs.getoptions(self._menu, parts)]
+            self.options = ['{} '.format(x) for x in self._menu.getoptions(line)]
         try:
             value = self.options[state]
         except IndexError:
@@ -243,11 +220,11 @@ class Shell:
 
     def __init__(self, db):
         self.db = db
-        self.menu = Menu(db=db)
+        self.app = App(db=db)
         # Initialise readline module.
         readline.parse_and_bind('tab: complete')
         readline.parse_and_bind('set editing-mode vi')
-        readline.set_completer(DictReadlineCompleter(self.menu))
+        readline.set_completer(DictReadlineCompleter(self.app.menu))
 
     @property
     def prompt(self):
@@ -265,13 +242,19 @@ class Shell:
                 self.action(line)
 
     def action(self, line):
-        parts = shlex.split(line)
-        func, args = menufuncs.getmenuitem(self.menu, parts)
         try:
+            func, args = self.app.menu.getcommandargs(line)
             return func(*args)
-        except TypeError:
+        except IndexError:
+            print('bad input')
             # Small easter egg, print a funny saying inspired by Budge.
             print(easter.getcookie())
+        except KeyError:
+            print('command {} not found'.format(line))
+        except ValueError:
+            print('bad args')
+        except Exception:
+            print('unhandled exception')
 
 def formatsync(lastsync):
     if lastsync is None:
