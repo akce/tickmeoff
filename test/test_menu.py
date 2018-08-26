@@ -9,7 +9,7 @@ m.additem(Command(name='exec2', arg=StringArgument()))
 m.additem(Command(name='exec22'))
 enumargs = Command(name='enumargs', arg=EnumArgument(opts=['one', 'two']))
 m.additem(enumargs)
-s1 = Menu(name='submenu1')
+s1 = SubMenu(name='submenu1', rootmenu=m)
 s1.additem(Command(name='exec3', arg=NoArgument()))
 m.additem(s1)
 
@@ -108,3 +108,47 @@ def test_getcommandargs(menu, search, ecmd, eargs):
 def test_getcommandargs_errors(menu, search, expected):
     with pytest.raises(expected):
         menu.getcommandargs(search)
+
+def test_menulist():
+    assert list(m) == ['exec1', 'exec2', 'exec22', 'enumargs', 'submenu1']
+
+def test_commandfuncdefaultname():
+    cf = CommandFunc(func=bool)
+    assert isinstance(cf, Command)
+    assert cf.name == 'bool'
+    assert isinstance(cf.arg, NoArgument)
+    assert cf.func is bool
+
+def test_commandfuncsetname():
+    cf = CommandFunc(func=bool, name='myname')
+    assert isinstance(cf, Command)
+    assert cf.name == 'myname'
+    assert isinstance(cf.arg, NoArgument)
+    assert cf.func is bool
+
+@pytest.fixture
+def menu():
+    root = Menu(name='root')
+    root.additem(Command(name='test1'))
+    submenu = SubMenu(name='sub1', rootmenu=root)
+    root.additem(submenu)
+    root.additem(Command(name='test3'))
+    return root
+
+def test_pushpopmenu(menu):
+    # Check the original list.
+    assert list(menu) == ['test1', 'sub1', 'test3']
+    cmd, args = menu.getcommandargs('sub1')
+    assert args is None
+    cmd()
+    assert list(menu) == ['back']
+    assert menu.getoptions('') == ['back']
+    assert menu.getoptions('b') == ['back']
+    assert menu.getoptions('back') == ['back']
+    assert menu.getoptions('blah') == []
+    backcmd, backargs = menu.getcommandargs('back')
+    assert backargs is None
+    backcmd()
+    assert list(menu) == ['test1', 'sub1', 'test3']
+    # Make sure that 'back' command has been removed from sub1 menu.
+    assert list(menu['sub1']) == []
