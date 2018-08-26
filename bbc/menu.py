@@ -71,22 +71,19 @@ class EnumArgument:
     def getoptions(self, string):
         return [opt for opt in self.opts if opt.startswith(string)]
 
-class BaseMenu:
+class RootMenu:
     """ A menu is a list of commands. """
 
     def __init__(self, name):
         self.name = name
+        self.commands = []
 
     def additem(self, item):
-        assert isinstance(item, (Command, BaseMenu))
-        print(id(self.commands))
+        assert isinstance(item, (Command, RootMenu))
         self.commands.append(item)
-        if item.name == 'back':
-            print(item)
-            print(self.commands)
 
     def delitem(self, item):
-        assert isinstance(item, (Command, BaseMenu))
+        assert isinstance(item, (Command, RootMenu))
         self.commands.remove(item)
 
     def __iter__(self):
@@ -141,8 +138,6 @@ class BaseMenu:
         if string is None:
             # exec self.
             cmd, args = self, None
-            print('BaseMenu::getcommandargs')
-            print(self.commands)
         else:
             words = string.split(None, maxsplit=1)
             subcmd = self[words[0]]
@@ -153,11 +148,10 @@ class BaseMenu:
             cmd, args = subcmd.getcommandargs(subargs)
         return cmd, args
 
-class SubMenu(BaseMenu):
+class SubMenu(RootMenu):
 
     def __init__(self, name, rootmenu):
         super().__init__(name=name)
-        self.commands = []
         self.rootmenu = rootmenu
 
     def back(self, *args, **kwargs):
@@ -170,23 +164,32 @@ class SubMenu(BaseMenu):
         # Add a 'back' menu command.
         self.additem(CommandFunc(func=self.back))
 
-class Menu(BaseMenu):
+class Menu:
 
     def __init__(self, name):
-        super().__init__(name=name)
-        self._commandstack = [[]]
+        self._commandstack = [RootMenu(name=name)]
 
-    @property
-    def commands(self):
-        return self._commandstack[-1]
+    def __iter__(self):
+        return iter(self._commandstack[-1])
+
+    def __getitem__(self, key):
+        return self._commandstack[-1][key]
+
+    def additem(self, item):
+        return self._commandstack[-1].additem(item)
+
+    def getoptions(self, string):
+        return self._commandstack[-1].getoptions(string)
+
+    def getcommandargs(self, string):
+        return self._commandstack[-1].getcommandargs(string)
 
     def pushmenu(self, m):
-        assert m in self.commands
-        assert isinstance(m, BaseMenu)
-        # Note _commandstack is a list of 'commands' where commands is a [Command].
-        self._commandstack.append(m.commands)
+        assert isinstance(m, RootMenu)
+        assert m in self._commandstack[-1].commands
+        self._commandstack.append(m)
 
     def popmenu(self, m):
-        assert m.commands is self.commands
-        assert isinstance(m, BaseMenu)
+        assert isinstance(m, RootMenu)
+        assert m is self._commandstack[-1]
         self._commandstack.pop()
