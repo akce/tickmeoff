@@ -23,7 +23,7 @@ class App:
         m.additem(menu.CommandFunc(self.download))
         m.additem(menu.CommandFunc(self.history))
         m.additem(menu.CommandFunc(self.movies))
-        m.additem(menu.CommandFunc(self.addpath))
+        m.additem(menu.CommandFunc(self.addpath, arg=menu.StringArgument(name='path')))
         m.additem(menu.CommandFunc(self.paths))
         m.additem(menu.CommandFunc(self.scan))
         m.additem(menu.CommandFunc(self.missing))
@@ -33,8 +33,8 @@ class App:
         m.additem(menu.CommandFunc(self.link))
         m.additem(menu.CommandFunc(self.write))
         cm = menu.SubMenu(name='config', rootmenu=m)
-        cm.additem(menu.CommandFunc(self.configget, name='get'))
-        cm.additem(menu.CommandFunc(self.configset, name='set'))
+        cm.additem(menu.CommandFunc(self.configget, name='get', arg=menu.NoArgument()))
+        cm.additem(menu.CommandFunc(self.configset, name='set', arg=menu.StringArgument(name='key value')))
         m.additem(cm)
         dm = menu.SubMenu(name='debug', rootmenu=m)
         dm.additem(menu.CommandFunc(self.commit))
@@ -137,7 +137,7 @@ class App:
 
     def configset(self, *args, **kwargs):
         """ set a config item """
-        key, value = args[:2]
+        key, value = args[0].split()
         config.setconfig(self.db, key, value)
         self.db.commit()
 
