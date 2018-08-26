@@ -2,6 +2,7 @@ import operator
 import os
 import readline
 import time
+import traceback
 
 from . import bbc
 from . import config
@@ -256,7 +257,7 @@ class Shell:
         except ValueError:
             print('bad args')
         except Exception:
-            print('unhandled exception')
+            traceback.print_exc()
 
 def formatsync(lastsync):
     if lastsync is None:
