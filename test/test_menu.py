@@ -47,8 +47,8 @@ def test_getopts(menu, search, expected):
 
 @pytest.mark.parametrize('menu,search,ecmd,eargs', [
     # exec1 defaults to no arguments.
-    (m, 'exec1', m['exec1'], None),
-    (m, 'exec1 ', m['exec1'], None),
+    (m, 'exec1', m['exec1'], []),
+    (m, 'exec1 ', m['exec1'], []),
     # exec2 needs a string.
     (m, 'exec2 x', m['exec2'], ['x']),
     (m, 'exec2 xxxx', m['exec2'], ['xxxx']),
@@ -58,8 +58,8 @@ def test_getopts(menu, search, expected):
     (m, 'exec2  xxxx ', m['exec2'], ['xxxx']),
     (m, 'exec2  xxxx  yyyy ', m['exec2'], ['xxxx  yyyy']),	# A string with spaces.
     # exec22 (as opposed to exec2). Takes no args.
-    (m, 'exec22', m['exec22'], None),
-    (m, 'exec22 ', m['exec22'], None),
+    (m, 'exec22', m['exec22'], []),
+    (m, 'exec22 ', m['exec22'], []),
     # enum args.
     (m, 'enumargs one', m['enumargs'], ['one']),
     (m, 'enumargs one ', m['enumargs'], ['one']),
@@ -70,10 +70,10 @@ def test_getopts(menu, search, expected):
     (m, 'enumargs  two', m['enumargs'], ['two']),
     (m, 'enumargs  two ', m['enumargs'], ['two']),
     # submenu1 -> exec3
-    (m, 'submenu1', m['submenu1'], None),
-    (m, 'submenu1 exec3', m['submenu1']['exec3'], None),
-    (m, 'submenu1 exec3 ', m['submenu1']['exec3'], None),
-    (m, 'submenu1  exec3 ', m['submenu1']['exec3'], None),
+    (m, 'submenu1', m['submenu1'], []),
+    (m, 'submenu1 exec3', m['submenu1']['exec3'], []),
+    (m, 'submenu1 exec3 ', m['submenu1']['exec3'], []),
+    (m, 'submenu1  exec3 ', m['submenu1']['exec3'], []),
     ])
 def test_getcommandargs(menu, search, ecmd, eargs):
     rcmd, rargs = menu.getcommandargs(search)
@@ -140,8 +140,7 @@ def test_pushpopmenu(menu):
     assert menu.name == 'xyzzy'
     assert list(menu) == ['test1', 'sub1', 'test3']
     cmd, args = menu.getcommandargs('sub1')
-    assert args is None
-    cmd()
+    cmd(*args)
     assert menu.name == 'sub1'
     assert list(menu) == ['back']
     assert menu.getoptions('') == ['back']
@@ -149,8 +148,7 @@ def test_pushpopmenu(menu):
     assert menu.getoptions('back') == ['back']
     assert menu.getoptions('blah') == []
     backcmd, backargs = menu.getcommandargs('back')
-    assert backargs is None
-    backcmd()
+    backcmd(*args)
     assert list(menu) == ['test1', 'sub1', 'test3']
     # Make sure that 'back' command has been removed from sub1 menu.
     assert list(menu['sub1']) == []

@@ -33,7 +33,7 @@ class NoArgument:
             stripped = string.strip()
             if stripped:
                 raise ValueError()
-        return None
+        return []
 
 class StringArgument:
 
@@ -137,7 +137,7 @@ class RootMenu:
         # Raises KeyError (Command not found) or IndexError (command name not provided).
         if string is None:
             # exec self.
-            cmd, args = self, None
+            cmd, args = self, []
         else:
             words = string.split(None, maxsplit=1)
             subcmd = self[words[0]]
