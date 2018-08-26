@@ -3,6 +3,9 @@ from bbc.menu import *
 
 import pytest
 
+import contextlib
+import io
+
 m = Menu(name='root')
 m.additem(Command(name='exec1'))	# arg defaults to NoArgument.
 m.additem(Command(name='exec2', arg=StringArgument()))
@@ -28,7 +31,7 @@ m.additem(s1)
     (s1, 'exec3 ', []),			# Trailing whitespace, match subcommand/args.
     (s1, 'no-match', []),
     # Now submenu via main menu.
-    (m, 'submenu1 ', ['exec3']),
+    (m, 'submenu1 ', ['help', 'exec3']),
     (m, 'submenu1 e', ['exec3']),
     (m, 'submenu1 exec3', ['exec3']),
     (m, 'submenu1 exec3 ', []),		# Trailing whitespace, match subcommand/args.
@@ -110,7 +113,7 @@ def test_getcommandargs_errors(menu, search, expected):
         menu.getcommandargs(search)
 
 def test_menulist():
-    assert list(m) == ['exec1', 'exec2', 'exec22', 'enumargs', 'submenu1']
+    assert list(m) == ['help', 'exec1', 'exec2', 'exec22', 'enumargs', 'submenu1']
 
 def test_commandfuncdefaultname():
     cf = CommandFunc(func=bool)
@@ -129,26 +132,56 @@ def test_commandfuncsetname():
 @pytest.fixture
 def menu():
     root = Menu(name='xyzzy')
-    root.additem(Command(name='test1'))
+    root.additem(CommandFunc(name='test1', func=any))
     submenu = SubMenu(name='sub1', rootmenu=root)
     root.additem(submenu)
-    root.additem(Command(name='test3'))
+    def nodoc():
+        pass
+    root.additem(CommandFunc(name='test3', func=nodoc))
     return root
 
 def test_pushpopmenu(menu):
     # Check the original menu.
     assert menu.name == 'xyzzy'
-    assert list(menu) == ['test1', 'sub1', 'test3']
+    assert list(menu) == ['help', 'test1', 'sub1', 'test3']
     cmd, args = menu.getcommandargs('sub1')
     cmd(*args)
     assert menu.name == 'sub1'
-    assert list(menu) == ['back']
-    assert menu.getoptions('') == ['back']
+    assert list(menu) == ['help', 'back']
+    assert menu.getoptions('') == ['help', 'back']
     assert menu.getoptions('b') == ['back']
     assert menu.getoptions('back') == ['back']
     assert menu.getoptions('blah') == []
     backcmd, backargs = menu.getcommandargs('back')
     backcmd(*args)
-    assert list(menu) == ['test1', 'sub1', 'test3']
+    assert list(menu) == ['help', 'test1', 'sub1', 'test3']
     # Make sure that 'back' command has been removed from sub1 menu.
-    assert list(menu['sub1']) == []
+    assert list(menu['sub1']) == ['help']
+
+def test_helprootcommand(menu):
+    # Get the help command.
+    h, a = menu.getcommandargs('help')
+    # HACK! Capture and compare expected stdout, only because I can't patch ''.format().
+    stdout = io.StringIO()
+    with contextlib.redirect_stdout(stdout):
+        h(*a)
+    assert stdout.getvalue() == '''help       list command help
+test1      Return True if bool(x) is True for any x in the iterable.
+sub1       stick menu sub1
+test3      no documentation available
+'''
+
+def test_helpsubmenucommand(menu):
+    # Select submenu.
+    cmd, args = menu.getcommandargs('sub1')
+    cmd(*args)
+    # Get the help command.
+    h, a = menu.getcommandargs('help')
+    # HACK! Capture and compare expected stdout, only because I can't patch ''.format().
+    stdout = io.StringIO()
+    with contextlib.redirect_stdout(stdout):
+        h(*a)
+    print(stdout.getvalue())
+    assert stdout.getvalue() == '''help       list command help
+back       jump back to parent menu
+'''

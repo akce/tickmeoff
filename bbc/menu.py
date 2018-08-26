@@ -17,6 +17,14 @@ class CommandFunc(Command):
         super().__init__(name=name if name else func.__name__, arg=arg)
         self.func = func
 
+    @property
+    def summary(self):
+        try:
+            line = self.func.__doc__.strip().split('\n')[0]
+        except AttributeError:
+            line = 'no documentation available'
+        return line
+
     def __call__(self, *args, **kwargs):
         return self.func(*args, **kwargs)
 
@@ -76,7 +84,15 @@ class RootMenu:
 
     def __init__(self, name):
         self.name = name
-        self.commands = []
+        self.commands = [self._makehelpcommand()]
+
+    def _makehelpcommand(self):
+        return CommandFunc(func=self.helpcommand, name='help')
+
+    def helpcommand(self, *args):
+        """ list command help """
+        for c in self.commands:
+            print('{:10} {}'.format(c.name, c.summary))
 
     def additem(self, item):
         assert isinstance(item, (Command, RootMenu))
@@ -153,8 +169,10 @@ class SubMenu(RootMenu):
     def __init__(self, name, rootmenu):
         super().__init__(name=name)
         self.rootmenu = rootmenu
+        self.summary = 'stick menu {}'.format(name)
 
     def back(self, *args, **kwargs):
+        ''' jump back to parent menu '''
         self.rootmenu.popmenu(self)
         # Remove 'back' menu command, assumes that popmenu is the last command.
         self.commands.pop()
