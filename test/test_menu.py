@@ -128,7 +128,7 @@ def test_commandfuncsetname():
 
 @pytest.fixture
 def menu():
-    root = Menu(name='root')
+    root = Menu(name='xyzzy')
     root.additem(Command(name='test1'))
     submenu = SubMenu(name='sub1', rootmenu=root)
     root.additem(submenu)
@@ -136,11 +136,13 @@ def menu():
     return root
 
 def test_pushpopmenu(menu):
-    # Check the original list.
+    # Check the original menu.
+    assert menu.name == 'xyzzy'
     assert list(menu) == ['test1', 'sub1', 'test3']
     cmd, args = menu.getcommandargs('sub1')
     assert args is None
     cmd()
+    assert menu.name == 'sub1'
     assert list(menu) == ['back']
     assert menu.getoptions('') == ['back']
     assert menu.getoptions('b') == ['back']

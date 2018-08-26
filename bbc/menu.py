@@ -169,6 +169,10 @@ class Menu:
     def __init__(self, name):
         self._commandstack = [RootMenu(name=name)]
 
+    @property
+    def name(self):
+        return self._commandstack[-1].name
+
     def __iter__(self):
         return iter(self._commandstack[-1])
 
