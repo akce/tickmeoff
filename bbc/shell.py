@@ -252,10 +252,13 @@ class Shell:
             print('bad input')
             # Small easter egg, print a funny saying inspired by Budge.
             print(easter.getcookie())
+            traceback.print_exc()
         except KeyError:
             print('command {} not found'.format(line))
+            traceback.print_exc()
         except ValueError:
             print('bad args')
+            traceback.print_exc()
         except Exception:
             traceback.print_exc()
 
