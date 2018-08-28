@@ -185,3 +185,50 @@ def test_helpsubmenucommand(menu):
     assert stdout.getvalue() == '''help       list command help
 back       jump back to parent menu
 '''
+
+def test_compositeargs_init():
+    strarg = StringArgument(name='strarg')
+    noarg = NoArgument(name='noarg')
+    cmparg = CompositeArgument(strarg, noarg, name='both')
+    assert cmparg.args == (strarg, noarg)
+    assert cmparg.name == 'both'
+
+@pytest.mark.parametrize('clss,search,expected', [
+    ((NoArgument(),	StringArgument()),	'',	[]),
+    ((StringArgument(),	NoArgument()),		'',	[]),
+    ((NoArgument(),	StringArgument()),	' ',	[]),
+    ((StringArgument(),	NoArgument()),		' ',	[' ']),
+    ((NoArgument(),	StringArgument()),	'blah',	[]),	# no-args matches nothing first.
+    ((StringArgument(),	NoArgument()),		'blah',	['blah']),
+
+    ((NoArgument(),	EnumArgument(opts=['a', 'b'])),	'',	[]),
+    ((NoArgument(),	EnumArgument(opts=['a', 'b'])),	'x',	[]),
+    ])
+def test_compositeargs_getoptions(clss, search, expected):
+    cmparg = CompositeArgument(*clss, name='both')
+    result = cmparg.getoptions(search)
+    assert result == expected
+
+@pytest.mark.parametrize('clss,search,expected', [
+    ((NoArgument(), StringArgument()), None,	[]),
+    ((StringArgument(), NoArgument()), None,	[]),
+    ((NoArgument(), StringArgument()), '',	[]),
+    ((StringArgument(), NoArgument()), '',	['']),
+    ((NoArgument(), StringArgument()), 'blah',	['blah']),
+    ((StringArgument(), NoArgument()), 'blah',	['blah']),
+
+    ((NoArgument(),	EnumArgument(opts=['a', 'b'])),	'',	[]),
+    ((NoArgument(),	EnumArgument(opts=['a', 'b'])),	'a',	['a']),
+    ((NoArgument(),	EnumArgument(opts=['a', 'b'])),	'b',	['b']),
+    ((NoArgument(),	EnumArgument(opts=['a', 'b'])),	'ab',	ValueError),
+    ((NoArgument(),	EnumArgument(opts=['a', 'b'])),	'x',	ValueError),
+    ])
+def test_compositeargs_parse(clss, search, expected):
+    cmparg = CompositeArgument(*clss, name='both')
+    # HACK: Aaargh, isinstance(expected, BaseException) is *always* False!
+    if expected == ValueError:
+        with pytest.raises(expected):
+            cmparg.parse(search)
+    else:
+        result = cmparg.parse(search)
+        assert result == expected

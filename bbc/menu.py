@@ -28,6 +28,39 @@ class CommandFunc(Command):
     def __call__(self, *args, **kwargs):
         return self.func(*args, **kwargs)
 
+class CompositeArgument:
+    """ Accepts either/or arguments. """
+
+    def __init__(self, *args, name='cmparg'):
+        self.args = args
+        self.name = name
+
+    def getoptions(self, string):
+        for a in self.args:
+            try:
+                opts = a.getoptions(string)
+            except ValueError:
+                # Try next arg.
+                pass
+            else:
+                break
+        else:
+            raise ValueError()
+        return opts
+
+    def parse(self, string):
+        for a in self.args:
+            try:
+                opts = a.parse(string)
+            except ValueError:
+                # Try next arg.
+                pass
+            else:
+                break
+        else:
+            raise ValueError()
+        return opts
+
 class NoArgument:
 
     def __init__(self, name='noarg'):
