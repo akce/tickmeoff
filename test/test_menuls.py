@@ -24,14 +24,16 @@ def mockisfile(path):
 def mockabspath(path):
     return rootpath
 
+sep = os.path.sep
+
 @mock.patch.object(os, 'listdir', mocklistdir)
 @mock.patch.object(os.path, 'abspath', mockabspath)
 @mock.patch.object(os.path, 'isdir', mockisdir)
 @mock.patch.object(os.path, 'isfile', mockisfile)
 @pytest.mark.parametrize('cls,expected', [
-    (mls.DirectoryArgument, ['dir1/', 'dir2/']),
+    (mls.DirectoryArgument, ['dir1' + sep, 'dir2' + sep]),
     (mls.FileArgument, ['file1']),
-    (mls.ListArgument, ['dir1/', 'dir2/', 'file1']),
+    (mls.ListArgument, ['dir1' + sep, 'dir2' + sep, 'file1']),
     ])
 def test_menuls(cls, expected):
     arg = cls()
