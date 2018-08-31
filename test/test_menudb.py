@@ -5,7 +5,9 @@ import bbc.menudb as mdb
 
 import bbc.db as dbmod
 
+import sqlite3
 import unittest.mock as mock
+
 import pytest
 
 schema = '''
@@ -50,3 +52,30 @@ def test_dbargs_refresh(db):
         c.execute('''INSERT INTO first (name, description) VALUES ('cheesy', 'good bye')''')
     assert argname.opts == ['hello', 'world', 'cheesy']
     assert argdesc.opts == ['big greeting', 'for everyone', 'good bye']
+
+@pytest.mark.parametrize('db,search', [
+    (gdb, 'hello'),
+    (gdb, 'hello '),
+    ])
+def test_dbargs_getcommandargs(db, search):
+    """ parse a good result """
+    argname = mdb.TableArgument(db, 'first', 'name')
+    # Test a good row.
+    result0, = argname.parse(search)
+    assert isinstance(result0, sqlite3.Row)
+    assert result0.keys() ==  ['firstid', 'name', 'description']
+    assert result0['firstid'] == 1
+    assert result0['name'] == 'hello'
+    assert result0['description'] == 'big greeting'
+
+@pytest.mark.parametrize('db,search', [
+    (gdb, ''),
+    (gdb, 'h'),
+    (gdb, 'hell'),
+    (gdb, 'blah'),
+    ])
+def test_dbargs_getcommandargs_nonexist(db, search):
+    """ non-existent rows """
+    argname = mdb.TableArgument(db, 'first', 'name')
+    with pytest.raises(ValueError):
+        argname.parse(search)

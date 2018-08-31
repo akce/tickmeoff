@@ -13,13 +13,24 @@ class TableArgument(menu.EnumArgument):
 
     @property
     def opts(self):
-        return self._makeopts()
+        return [r[self.column] for r in self._get()]
 
     @opts.setter
     def opts(self, lst):
         # Ignored, only here for compatibility with EnumArgument.__init__.
         pass
 
-    def _makeopts(self):
-        self._data = dbutil.getall(self.db, 'SELECT * FROM {}'.format(self.table))
-        return [r[self.column] for r in self._data]
+    def parse(self, string):
+        """ overridden so a sqlite.Row is returned. """
+        try:
+            stripped = string.strip()
+        except AttributeError:
+            pass
+        else:
+            for x in self._get():
+                if x[self.column] == stripped:
+                    return [x]
+        raise ValueError()
+
+    def _get(self):
+        return dbutil.getall(self.db, 'SELECT * FROM {}'.format(self.table))
