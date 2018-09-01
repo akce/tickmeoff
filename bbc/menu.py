@@ -22,6 +22,8 @@ class Command:
         for a in self.args:
             arg, s = a.parse(s)
             args.extend(arg)
+        # TODO assert s is None?
+        #assert s is None
         return self, args
 
 class CommandFunc(Command):
@@ -64,7 +66,7 @@ class CompositeArgument:
     def parse(self, string):
         for a in self.args:
             try:
-                opts = a.parse(string)
+                ret = a.parse(string)
             except ValueError:
                 # Try next arg.
                 pass
@@ -72,7 +74,7 @@ class CompositeArgument:
                 break
         else:
             raise ValueError()
-        return opts
+        return ret
 
 class NoArgument:
 
@@ -118,7 +120,7 @@ class EnumArgument:
     def parse(self, string):
         if string is not None:
             # Looking for an exact match. We'll assume string is equal or greater than opts.
-            matches = self.longmatch(string, self.opts)
+            matches = self.longmatch(string)
             if matches:
                 # Find the best match. ie, remainder == '' or starts with whitespace.
                 for opt, remainder in matches:
@@ -128,8 +130,8 @@ class EnumArgument:
                         return [opt], remainder
         raise ValueError()
 
-    def longmatch(self, string, options):
-        return [(opt, string[len(opt):]) for opt in options if string.startswith(opt)]
+    def longmatch(self, string):
+        return [(opt, string[len(opt):]) for opt in self.opts if string.startswith(opt)]
 
     def getoptions(self, string):
         # string can either be:

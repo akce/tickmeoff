@@ -9,6 +9,7 @@ from . import config
 from . import easter
 from . import mediafile
 from . import menu
+from . import menudb
 from . import movie
 from . import playlist
 
@@ -33,8 +34,10 @@ class App:
         m.additem(menu.CommandFunc(self.link))
         m.additem(menu.CommandFunc(self.write))
         cm = menu.SubMenu(name='config', rootmenu=m)
-        cm.additem(menu.CommandFunc(self.configget, name='get'))
-        cm.additem(menu.CommandFunc(self.configset, menu.StringArgument(name='key value'), name='set'))
+        ckeyarg = menudb.TableArgument(self.db, table='config', column='key')
+        cgetargs = menu.CompositeArgument(ckeyarg, menu.NoArgument(name='getall'))
+        cm.additem(menu.CommandFunc(self.configget, cgetargs, name='get'))
+        cm.additem(menu.CommandFunc(self.configset, ckeyarg, menu.StringArgument(name='value'), name='set'))
         m.additem(cm)
         dm = menu.SubMenu(name='debug', rootmenu=m)
         dm.additem(menu.CommandFunc(self.commit))
@@ -127,9 +130,9 @@ class App:
         """ show config settings """
         if args:
             # Print the requested config item.
-            key = args[0]
-            row = config.getconfig(self.db, key)
-            print('{:16} {}'.format(key, row['value']))
+            keyname = args[0]['key']
+            row = config.getconfig(self.db, keyname)
+            print('{:16} {}'.format(keyname, row['value']))
         else:
             # Print all.
             for row in config.getallconfig(self.db):

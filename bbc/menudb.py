@@ -20,17 +20,14 @@ class TableArgument(menu.EnumArgument):
         # Ignored, only here for compatibility with EnumArgument.__init__.
         pass
 
-    def parse(self, string):
+    def longmatch(self, string):
         """ overridden so a sqlite.Row is returned. """
-        try:
-            stripped = string.strip()
-        except AttributeError:
-            pass
-        else:
-            for x in self._get():
-                if x[self.column] == stripped:
-                    return [x]
-        raise ValueError()
+        matches = []
+        for x in self._get():
+            val = x[self.column]
+            if string.startswith(val):
+                matches.append((x, string[len(val):]))
+        return matches
 
     def _get(self):
         return dbutil.getall(self.db, 'SELECT * FROM {}'.format(self.table))

@@ -53,20 +53,21 @@ def test_dbargs_refresh(db):
     assert argname.opts == ['hello', 'world', 'cheesy']
     assert argdesc.opts == ['big greeting', 'for everyone', 'good bye']
 
-@pytest.mark.parametrize('db,search', [
-    (gdb, 'hello'),
-    (gdb, 'hello '),
+@pytest.mark.parametrize('db,search,resrem', [
+    (gdb, 'hello', None),
+    (gdb, 'hello ', ' '),
     ])
-def test_dbargs_getcommandargs(db, search):
+def test_dbargs_getcommandargs(db, search, resrem):
     """ parse a good result """
     argname = mdb.TableArgument(db, 'first', 'name')
     # Test a good row.
-    result0, = argname.parse(search)
+    (result0,), remainder = argname.parse(search)
     assert isinstance(result0, sqlite3.Row)
     assert result0.keys() ==  ['firstid', 'name', 'description']
     assert result0['firstid'] == 1
     assert result0['name'] == 'hello'
     assert result0['description'] == 'big greeting'
+    assert remainder == resrem
 
 @pytest.mark.parametrize('db,search', [
     (gdb, ''),
