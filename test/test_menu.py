@@ -8,12 +8,12 @@ import io
 
 m = Menu(name='root')
 m.additem(Command(name='exec1'))	# arg defaults to NoArgument.
-m.additem(Command(name='exec2', arg=StringArgument()))
+m.additem(Command(StringArgument(), name='exec2'))
 m.additem(Command(name='exec22'))
-enumargs = Command(name='enumargs', arg=EnumArgument(opts=['one', 'two']))
+enumargs = Command(EnumArgument(opts=['one', 'two']), name='enumargs')
 m.additem(enumargs)
 s1 = SubMenu(name='submenu1', rootmenu=m)
-s1.additem(Command(name='exec3', arg=NoArgument()))
+s1.additem(Command(NoArgument(), name='exec3'))
 m.additem(s1)
 
 @pytest.mark.parametrize('menu,search,expected', [
@@ -110,7 +110,8 @@ def test_getcommandargs(menu, search, ecmd, eargs):
     ])
 def test_getcommandargs_errors(menu, search, expected):
     with pytest.raises(expected):
-        menu.getcommandargs(search)
+        cmd, args = menu.getcommandargs(search)
+        print('search "{}" -> cmd, args {}, {}'.format(search, cmd.name, args))
 
 def test_menulist():
     assert list(m) == ['help', 'exec1', 'exec2', 'exec22', 'enumargs', 'submenu1']
@@ -119,14 +120,14 @@ def test_commandfuncdefaultname():
     cf = CommandFunc(func=bool)
     assert isinstance(cf, Command)
     assert cf.name == 'bool'
-    assert isinstance(cf.arg, NoArgument)
+    assert isinstance(cf.args[0], NoArgument)
     assert cf.func is bool
 
 def test_commandfuncsetname():
     cf = CommandFunc(func=bool, name='myname')
     assert isinstance(cf, Command)
     assert cf.name == 'myname'
-    assert isinstance(cf.arg, NoArgument)
+    assert isinstance(cf.args[0], NoArgument)
     assert cf.func is bool
 
 @pytest.fixture
@@ -193,16 +194,17 @@ def test_compositeargs_init():
     assert cmparg.args == (strarg, noarg)
     assert cmparg.name == 'both'
 
+## XXX Either NoArgument should only TERMINATE arglists, or getoptions should keep processing.
 @pytest.mark.parametrize('clss,search,expected', [
-    ((NoArgument(),	StringArgument()),	'',	[]),
-    ((StringArgument(),	NoArgument()),		'',	[]),
-    ((NoArgument(),	StringArgument()),	' ',	[]),
-    ((StringArgument(),	NoArgument()),		' ',	[' ']),
-    ((NoArgument(),	StringArgument()),	'blah',	[]),	# no-args matches nothing first.
-    ((StringArgument(),	NoArgument()),		'blah',	['blah']),
+    ((NoArgument(),	StringArgument()),	'',	([], '')),
+    ((StringArgument(),	NoArgument()),		'',	([], None)),
+    ((NoArgument(),	StringArgument()),	' ',	([], ' ')),
+    ((StringArgument(),	NoArgument()),		' ',	([' '], None)),
+    ((NoArgument(),	StringArgument()),	'blah',	([], 'blah')),
+    ((StringArgument(),	NoArgument()),		'blah',	(['blah'], None)),
 
-    ((NoArgument(),	EnumArgument(opts=['a', 'b'])),	'',	[]),
-    ((NoArgument(),	EnumArgument(opts=['a', 'b'])),	'x',	[]),
+    ((NoArgument(),	EnumArgument(opts=['a', 'b'])),	'',	([], '')),
+    ((NoArgument(),	EnumArgument(opts=['a', 'b'])),	'x',	([], 'x')),
     ])
 def test_compositeargs_getoptions(clss, search, expected):
     cmparg = CompositeArgument(*clss, name='both')
@@ -210,16 +212,16 @@ def test_compositeargs_getoptions(clss, search, expected):
     assert result == expected
 
 @pytest.mark.parametrize('clss,search,expected', [
-    ((NoArgument(), StringArgument()), None,	[]),
-    ((StringArgument(), NoArgument()), None,	[]),
-    ((NoArgument(), StringArgument()), '',	[]),
-    ((StringArgument(), NoArgument()), '',	['']),
-    ((NoArgument(), StringArgument()), 'blah',	['blah']),
-    ((StringArgument(), NoArgument()), 'blah',	['blah']),
+    ((NoArgument(), StringArgument()), None,	([], None)),
+    ((StringArgument(), NoArgument()), None,	([], None)),
+    ((NoArgument(), StringArgument()), '',	([], None)),
+    ((StringArgument(), NoArgument()), '',	([''], None)),
+    ((NoArgument(), StringArgument()), 'blah',	(['blah'], None)),
+    ((StringArgument(), NoArgument()), 'blah',	(['blah'], None)),
 
-    ((NoArgument(),	EnumArgument(opts=['a', 'b'])),	'',	[]),
-    ((NoArgument(),	EnumArgument(opts=['a', 'b'])),	'a',	['a']),
-    ((NoArgument(),	EnumArgument(opts=['a', 'b'])),	'b',	['b']),
+    ((NoArgument(),	EnumArgument(opts=['a', 'b'])),	'',	([], None)),
+    ((NoArgument(),	EnumArgument(opts=['a', 'b'])),	'a',	(['a'], None)),
+    ((NoArgument(),	EnumArgument(opts=['a', 'b'])),	'b',	(['b'], None)),
     ((NoArgument(),	EnumArgument(opts=['a', 'b'])),	'ab',	ValueError),
     ((NoArgument(),	EnumArgument(opts=['a', 'b'])),	'x',	ValueError),
     ])

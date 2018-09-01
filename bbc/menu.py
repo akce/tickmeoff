@@ -1,20 +1,33 @@
 class Command:
 
-    def __init__(self, name, arg=None):
+    def __init__(self, *args, name='default'):
+        self.args = args or [NoArgument(name='default')]
         self.name = name
-        self.arg = NoArgument(name='default') if arg is None else arg
 
     def getoptions(self, string):
-        return self.arg.getoptions(string)
+        ret = []
+        search = string
+        for a in self.args:
+            opts, remainder = a.getoptions(string)
+            if remainder is None:
+                ret = opts
+                break
+            search = remainder
+        return ret
 
     def getcommandargs(self, string):
         # Let the command handler worry about words validity.
-        return self, self.arg.parse(string)
+        s = string
+        args = []
+        for a in self.args:
+            arg, s = a.parse(s)
+            args.extend(arg)
+        return self, args
 
 class CommandFunc(Command):
 
-    def __init__(self, func, name=None, arg=None):
-        super().__init__(name=name if name else func.__name__, arg=arg)
+    def __init__(self, func, *args, name=None):
+        super().__init__(*args, name=name if name else func.__name__)
         self.func = func
 
     @property
@@ -67,14 +80,16 @@ class NoArgument:
         self.name = name
 
     def getoptions(self, string):
-        return []
+        # take nothing, and return everything else as remainder.
+        return [], string
 
     def parse(self, string):
         if string is not None:
             stripped = string.strip()
             if stripped:
+                # We've been passed something. Error.
                 raise ValueError()
-        return []
+        return [], None
 
 class StringArgument:
 
@@ -84,13 +99,14 @@ class StringArgument:
     def parse(self, string):
         if string is None:
             raise ValueError()
-        return [string.strip()]
+        return [string.strip()], None
 
     def getoptions(self, string):
+        # string is greedy, so take the entire string and return no remainder.
         if string == '':
-            ret = []
+            ret = [], None
         else:
-            ret = [string]
+            ret = [string], None
         return ret
 
 class EnumArgument:
@@ -100,17 +116,48 @@ class EnumArgument:
         self.opts = [] if opts is None else opts
 
     def parse(self, string):
-        try:
-            stripped = string.strip()
-        except AttributeError:
-            pass
-        else:
-            if stripped in self.opts:
-                return [stripped]
+        if string is not None:
+            # Looking for an exact match. We'll assume string is equal or greater than opts.
+            matches = self.longmatch(string, self.opts)
+            if matches:
+                # Find the best match. ie, remainder == '' or starts with whitespace.
+                for opt, remainder in matches:
+                    if remainder == '':
+                        return [opt], None
+                    elif remainder.startswith(' '):
+                        return [opt], remainder
         raise ValueError()
 
+    def longmatch(self, string, options):
+        return [(opt, string[len(opt):]) for opt in options if string.startswith(opt)]
+
     def getoptions(self, string):
-        return [opt for opt in self.opts if opt.startswith(string)]
+        # string can either be:
+        # - the start of a match
+        # - an exact match
+        # - exact match plus the start of a following arg
+        # - no match at all.
+        opts = [opt for opt in self.opts if opt.startswith(string) or string.startswith(opt)]
+        if opts:
+            if len(opts) == 1:
+                # We have one match.
+                match, = opts
+                # It may still be a partial match for that one option.
+                if string in self.opts:
+                    # Exact/full match, return the match and the remainder of the string.
+                    remainder = string[len(match):]
+                    ret = opts, None if remainder == '' else remainder
+                else:
+                    # Partial match, return remaining option and end arg processing.
+                    ret = opts, None
+            else:
+                # length opts > 1
+                # return options and tell command not to process any more args.
+                ret = opts, None
+        else:
+            # No matches.
+            ret = [], None
+        return ret
 
 class RootMenu:
     """ A menu is a list of commands. """
