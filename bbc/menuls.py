@@ -16,7 +16,9 @@ def ls(path):
     yield from (x for x in itertools.chain(dirs(path), files(path)))
 
 def resolvepath(*paths):
-    return os.path.abspath(os.path.expanduser(os.path.join(*paths)))
+    # expanduser only works with ~ at the start of the path, so call for each component
+    # before joining.
+    return os.path.abspath(os.path.join(*(os.path.expanduser(x) for x in paths)))
 
 class BaseListerArgument(menu.EnumArgument):
 
@@ -50,6 +52,7 @@ class BaseListerArgument(menu.EnumArgument):
                 self.extradir = path
                 filepart = ''
             else:
+                # XXX spliting the fullpath -> self.extradir....
                 self.extradir, filepart = os.path.split(fullpath)
         except IndexError:
             self.extradir = ''

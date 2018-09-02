@@ -26,7 +26,13 @@ class Filesystem:
         return ap
 
     def expanduser(self, path):
-        return path.replace('~', self._home)
+        # expanduser only works with ~ at the start of the path.
+        # NOTE: this implementation does not support ~username expansion.
+        if path.startswith('~'):
+            res = path.replace('~', self._home)
+        else:
+            res = path
+        return res
 
     def listdir(self, path):
         try:

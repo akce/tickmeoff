@@ -10,6 +10,7 @@ from . import easter
 from . import mediafile
 from . import menu
 from . import menudb
+from . import menuls
 from . import movie
 from . import playlist
 
@@ -24,7 +25,8 @@ class App:
         m.additem(menu.CommandFunc(self.download))
         m.additem(menu.CommandFunc(self.history))
         m.additem(menu.CommandFunc(self.movies))
-        m.additem(menu.CommandFunc(self.addpath, menu.StringArgument(name='path')))
+        patharg = menuls.DirectoryArgument(name='path')
+        m.additem(menu.CommandFunc(self.addpath, patharg))
         m.additem(menu.CommandFunc(self.paths))
         m.additem(menu.CommandFunc(self.scan))
         m.additem(menu.CommandFunc(self.missing))
@@ -214,8 +216,7 @@ class DictReadlineCompleter:
             ## Build options list for text.
             # Grab the full line.
             line = readline.get_line_buffer()
-            # Append a space char saving user from having to add it for single completions.
-            self.options = ['{} '.format(x) for x in self._menu.getoptions(line)]
+            self.options = self._menu.getoptions(line)
         try:
             value = self.options[state]
         except IndexError:

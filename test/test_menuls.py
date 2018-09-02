@@ -22,7 +22,7 @@ fsdict = {
     },
     'dir3': {},
 }
-mockfs = test.mockfs.Filesystem(fsdict)
+mockfs = test.mockfs.Filesystem(fsdict, home='/dir2')
 
 sep = os.path.sep
 
@@ -55,6 +55,20 @@ sep = os.path.sep
     (mls.FileArgument,		'/dir3',		[]),
     (mls.ListArgument,		'/dir3',		[]),
     (mls.ListArgument,		'',		['dir1' + sep, 'dir2' + sep, 'dir3' + sep]),
+
+    # Home dir expansion.
+    (mls.DirectoryArgument,	'~',		['subdir1' + sep]),
+    (mls.FileArgument,		'~',		[]),
+    (mls.ListArgument,		'~',		['subdir1' + sep]),
+    (mls.DirectoryArgument,	'~/',		['subdir1' + sep]),
+    (mls.FileArgument,		'~/',		[]),
+    (mls.ListArgument,		'~/',		['subdir1' + sep]),
+    (mls.DirectoryArgument,	'~/subdir1',		[]),
+    (mls.FileArgument,		'~/subdir1',		['file2', 'file3']),
+    (mls.ListArgument,		'~/subdir1',		['file2', 'file3']),
+    # Partial search string.
+    (mls.DirectoryArgument,	'~/s',		['subdir1' + sep]),
+    (mls.DirectoryArgument,	'~/su',		['subdir1' + sep]),
     ])
 def test_menuls(cls, path, expected):
     with mockfs:
