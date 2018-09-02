@@ -11,6 +11,9 @@ cookies = [
     # Burgundy
     'I love lamp',
     'Stay classy',
+    # Misc
+    "God I hope that's blood",
+    "If you're not paying for the product, then you are the product",
     ]
 
 def getcookie():
