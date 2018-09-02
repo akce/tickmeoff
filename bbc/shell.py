@@ -26,9 +26,11 @@ class App:
         m.additem(menu.CommandFunc(self.history))
         m.additem(menu.CommandFunc(self.movies))
         patharg = menuls.DirectoryArgument(name='path')
-        m.additem(menu.CommandFunc(self.addpath, patharg))
-        m.additem(menu.CommandFunc(self.paths))
-        m.additem(menu.CommandFunc(self.scan))
+        pm = menu.SubMenu(name='paths', rootmenu=m)
+        pm.additem(menu.CommandFunc(self.listpaths, name='list'))
+        pm.additem(menu.CommandFunc(self.addpath, patharg, name='add'))
+        pm.additem(menu.CommandFunc(self.scan))
+        m.additem(pm)
         m.additem(menu.CommandFunc(self.missing))
         m.additem(menu.CommandFunc(self.punted))
         m.additem(menu.CommandFunc(self.diffs))
@@ -79,7 +81,7 @@ class App:
         else:
             print('need path')
 
-    def paths(self, *args, **kwargs):
+    def listpaths(self, *args, **kwargs):
         """ list media paths """
         for p in mediafile.getpaths(self.db):
             print(p['pathname'])
