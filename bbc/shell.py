@@ -29,6 +29,8 @@ class App:
         pm = menu.SubMenu(name='paths', rootmenu=m)
         pm.additem(menu.CommandFunc(self.listpaths, name='list'))
         pm.additem(menu.CommandFunc(self.addpath, patharg, name='add'))
+        dbpatharg = menudb.TableArgument(self.db, table='location', column='pathname')
+        pm.additem(menu.CommandFunc(self.deletepath, dbpatharg, name='delete'))
         pm.additem(menu.CommandFunc(self.scan))
         m.additem(pm)
         m.additem(menu.CommandFunc(self.missing))
@@ -78,6 +80,15 @@ class App:
             else:
                 mediafile.addlocation(self.db, p)
                 self.db.commit()
+        else:
+            print('need path')
+
+    def deletepath(self, *args, **kwargs):
+        """ delete path from list of dirs to scan """
+        if len(args) == 1:
+            row = args[0]
+            mediafile.deletelocation(self.db, row['locationid'])
+            self.db.commit()
         else:
             print('need path')
 

@@ -10,6 +10,9 @@ extensions = {'.avi', '.m4v', '.mkv', '.mp4', '.mpg'}
 def addlocation(db, path, baselocid=None):
     return dbutil.insert(db, 'INSERT INTO location (pathname, parentid) VALUES (?, ?)', path, baselocid)
 
+def deletelocation(db, locationid):
+    dbutil.insert(db, 'DELETE FROM location WHERE locationid = ?', locationid)
+
 def getlocation(db, path):
     return dbutil.getone(db, 'SELECT * FROM location WHERE pathname = ?', path)
 
