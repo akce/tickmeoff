@@ -8,33 +8,56 @@ import pytest
 
 import os
 
-rootpath = '/testhome'
-mockdirs = ['dir1', 'dir2']
-mockfiles = ['file1']
+import test.mockfs
 
-def mocklistdir(path):
-    return iter(mockdirs + mockfiles)
-
-def mockisdir(path):
-    return path in mockdirs
-
-def mockisfile(path):
-    return path in mockfiles
-
-def mockabspath(path):
-    return rootpath
+fsdict = {
+    'dir1': {
+        'file1': None,
+    },
+    'dir2': {
+        'subdir1': {
+            'file2': None,
+            'file3': None,
+        },
+    },
+    'dir3': {},
+}
+mockfs = test.mockfs.Filesystem(fsdict)
 
 sep = os.path.sep
 
-@mock.patch.object(os, 'listdir', mocklistdir)
-@mock.patch.object(os.path, 'abspath', mockabspath)
-@mock.patch.object(os.path, 'isdir', mockisdir)
-@mock.patch.object(os.path, 'isfile', mockisfile)
-@pytest.mark.parametrize('cls,expected', [
-    (mls.DirectoryArgument, ['dir1' + sep, 'dir2' + sep]),
-    (mls.FileArgument, ['file1']),
-    (mls.ListArgument, ['dir1' + sep, 'dir2' + sep, 'file1']),
+@pytest.mark.parametrize('cls,path,expected', [
+    (mls.DirectoryArgument,	'/',	['dir1' + sep, 'dir2' + sep, 'dir3' + sep]),
+    (mls.FileArgument,		'/',	[]),
+    (mls.ListArgument,		'/',	['dir1' + sep, 'dir2' + sep, 'dir3' + sep]),
+    (mls.DirectoryArgument,	'dir1/',		[]),
+    (mls.DirectoryArgument,	'/dir1/',		[]),
+    (mls.FileArgument,		'dir1',			['file1']),
+    (mls.FileArgument,		'/dir1',		['file1']),
+    (mls.ListArgument,		'dir1',			['file1']),
+    (mls.ListArgument,		'/dir1',		['file1']),
+    (mls.DirectoryArgument,	'/dir2',		['subdir1' + sep]),
+    # Partial search string.
+    (mls.DirectoryArgument,	'/dir2/s',		['subdir1' + sep]),
+    (mls.DirectoryArgument,	'/dir2/su',		['subdir1' + sep]),
+    (mls.DirectoryArgument,	'/dir2/x',		[]),
+
+    (mls.FileArgument,		'/dir2',		[]),
+    (mls.ListArgument,		'/dir2',		['subdir1' + sep]),
+
+    (mls.DirectoryArgument,	'/dir2/subdir1',	[]),
+    (mls.FileArgument,		'/dir2/subdir1',	['file2', 'file3']),
+    (mls.ListArgument,		'/dir2/subdir1',	['file2', 'file3']),
+    (mls.DirectoryArgument,	'dir2/subdir1',		[]),
+    (mls.FileArgument,		'dir2/subdir1',		['file2', 'file3']),
+    (mls.ListArgument,		'dir2/subdir1',		['file2', 'file3']),
+    (mls.DirectoryArgument,	'/dir3',		[]),
+    (mls.FileArgument,		'/dir3',		[]),
+    (mls.ListArgument,		'/dir3',		[]),
+    (mls.ListArgument,		'',		['dir1' + sep, 'dir2' + sep, 'dir3' + sep]),
     ])
-def test_menuls(cls, expected):
-    arg = cls()
-    assert arg.opts == expected
+def test_menuls(cls, path, expected):
+    with mockfs:
+        arg = cls()
+        opts, _ = arg.getoptions(path)
+        assert opts == expected

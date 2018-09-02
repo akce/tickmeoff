@@ -2,24 +2,33 @@
 
 import itertools
 import os
+import shlex
 
 from . import menu
 
 def dirs(path):
-    yield from (x + os.path.sep for x in os.listdir(path) if os.path.isdir(x))
+    yield from (x + os.path.sep for x in os.listdir(path) if os.path.isdir(os.path.join(path, x)))
 
 def files(path):
-    yield from (x for x in os.listdir(path) if os.path.isfile(x))
+    yield from (x for x in os.listdir(path) if os.path.isfile(os.path.join(path, x)))
 
 def ls(path):
     yield from (x for x in itertools.chain(dirs(path), files(path)))
+
+def resolvepath(*paths):
+    return os.path.abspath(os.path.expanduser(os.path.join(*paths)))
 
 class BaseListerArgument(menu.EnumArgument):
 
     def __init__(self, listfunc, name, cwd=None):
         super().__init__(name=name)
-        self.cwd = os.path.abspath(os.curdir) if cwd is None else cwd
+        self.basedir = os.path.abspath(os.path.expanduser(cwd or os.curdir))
+        self.extradir = ''
         self.listfunc = listfunc
+
+    @property
+    def cwd(self):
+        return resolvepath(self.basedir, self.extradir)
 
     @property
     def opts(self):
@@ -29,6 +38,33 @@ class BaseListerArgument(menu.EnumArgument):
     def opts(self, lst):
         # Ignored, only here for compatibility with EnumArgument.__init__.
         pass
+
+    def _config(self, string):
+        try:
+            path = shlex.split(string)[0]
+            remainder = string[len(path):]
+            # Check if cwd exists.
+            # Split to get directory/fileparts.
+            fullpath = resolvepath(self.basedir, path)
+            if os.path.isdir(fullpath):
+                self.extradir = path
+                filepart = ''
+            else:
+                self.extradir, filepart = os.path.split(fullpath)
+        except IndexError:
+            self.extradir = ''
+            filepart = ''
+            remainder = ''
+        return filepart, remainder
+
+    def getoptions(self, string):
+        filepart, _ = self._config(string)
+        return super().getoptions(filepart)
+
+    def parse(self, string):
+        filepart, remainder = self._config(string)
+        args, _ = super().parse(filepart)
+        return args, remainder
 
 class DirectoryArgument(BaseListerArgument):
 
