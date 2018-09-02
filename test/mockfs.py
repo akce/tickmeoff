@@ -11,11 +11,13 @@ class Filesystem:
         self._mockexpanduser = mock.patch.object(os.path, 'expanduser', self.expanduser)
         self._mockisdir = mock.patch.object(os.path, 'isdir', self.isdir)
         self._mockisfile = mock.patch.object(os.path, 'isfile', self.isfile)
+        self._mockexists = mock.patch.object(os.path, 'exists', self.exists)
 
     def _get_path(self, path):
         fs = self._fsdict
-        for _dir in (x for x in path.split(os.path.sep) if x):
-            fs = fs[_dir]
+        if path != os.path.sep:
+            for _dir in (x for x in path.split(os.path.sep) if x):
+                fs = fs[_dir]
         return fs
 
     def abspath(self, path):
@@ -59,10 +61,19 @@ class Filesystem:
             res = False
         return res
 
+    def exists(self, path):
+        try:
+            d = self._get_path(path)
+            res = True
+        except KeyError:
+            res = False
+        return res
+
     def __enter__(self):
         self._mocklistdir.start()
         self._mockabspath.start()
         self._mockexpanduser.start()
+        self._mockexists.start()
         self._mockisdir.start()
         self._mockisfile.start()
 
@@ -70,5 +81,6 @@ class Filesystem:
         self._mocklistdir.stop()
         self._mockabspath.stop()
         self._mockexpanduser.stop()
+        self._mockexists.stop()
         self._mockisdir.stop()
         self._mockisfile.stop()
