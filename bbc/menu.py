@@ -127,6 +127,7 @@ class EnumArgument:
                     if remainder == '':
                         return [opt], None
                     elif remainder.startswith(' '):
+                        # Being shell-like, we'll ignore extra whitespace.. for now...
                         return [opt], remainder
         raise ValueError()
 
@@ -135,31 +136,29 @@ class EnumArgument:
 
     def getoptions(self, string):
         # string can either be:
-        # - the start of a match
         # - an exact match
+        # - the start of a match
         # - exact match plus the start of a following arg
         # - no match at all.
-        opts = [opt for opt in self.opts if opt.startswith(string) or string.startswith(opt)]
-        if opts:
-            if len(opts) == 1:
-                # We have one match.
-                match, = opts
-                # It may still be a partial match for that one option.
-                if string in self.opts:
-                    # Exact/full match, return the match and the remainder of the string.
-                    remainder = string[len(match):]
-                    ret = opts, None if remainder == '' else remainder
-                else:
-                    # Partial match, return remaining option and end arg processing.
-                    ret = opts, None
-            else:
-                # length opts > 1
-                # return options and tell command not to process any more args.
-                ret = opts, None
-        else:
-            # No matches.
-            ret = [], None
-        return ret
+        ## Remainders really complicate things.
+        # First, find the longest exact match.
+        # eg, string 'a ', opts = ['a', 'a b']
+        opts = self.opts
+        # Search for partial matches.
+        retopts = [x for x in opts if x.startswith(string)]
+        remainder = None
+        if len(retopts) == 0:
+            # Search for exact match and remainder.
+            reversedopts = list(sorted(opts, reverse=True))
+            for x in reversedopts:
+                if string.startswith(x):
+                    # We have an exact match and a remainder.
+                    retopts = [x]
+                    remainder = string[len(x):]
+                    if remainder == '':
+                        remainder = None
+                    break
+        return retopts, remainder
 
 class RootMenu:
     """ A menu is a list of commands. """
