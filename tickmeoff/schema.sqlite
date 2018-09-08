@@ -39,6 +39,12 @@ CREATE TABLE mediafile (
         UNIQUE (locationid, filename)
         );
 
+CREATE TABLE ticks (
+	movieid		INTEGER NOT NULL REFERENCES movie,
+        datetime	INTEGER,
+        PRIMARY KEY	(movieid, datetime)
+        );
+
 -- Global app/general configuration.
 CREATE TABLE config (
 	key		TEXT PRIMARY KEY,

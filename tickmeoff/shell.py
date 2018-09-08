@@ -13,6 +13,7 @@ from . import menudb
 from . import menuls
 from . import movie
 from . import playlist
+from . import ticks
 
 class App:
 
@@ -45,6 +46,11 @@ class App:
         cm.additem(menu.CommandFunc(self.configget, cgetargs, name='get'))
         cm.additem(menu.CommandFunc(self.configset, ckeyarg, menu.StringArgument(name='value'), name='set'))
         m.additem(cm)
+        tm = menu.SubMenu(name='tick', rootmenu=m)
+        tm.additem(menu.CommandFunc(self.ticklist, name='list'))
+        marg = menudb.TableArgument(self.db, table='movie', column='title')
+        tm.additem(menu.CommandFunc(self.tickmark, marg, name='mark'))
+        m.additem(tm)
         dm = menu.SubMenu(name='debug', rootmenu=m)
         dm.additem(menu.CommandFunc(self.commit))
         outfilearg = menuls.FileArgument(name='outpath', checkexists=False)
@@ -161,6 +167,16 @@ class App:
         """ set a config item """
         key, value = args[0].split()
         config.setconfig(self.db, key, value)
+        self.db.commit()
+
+    def ticklist(self, *args, **kwargs):
+        """ list ticked items """
+        for tick in ticks.getmarks(self.db):
+            print('{} {}'.format(time.strftime('%c', time.localtime(tick['datetime'])), tick['title']))
+
+    def tickmark(self, *args, **kwargs):
+        """ mark/tick watched movie """
+        ticks.markmovie(self.db, args[0])
         self.db.commit()
 
     def link(self, *args, **kwargs):
