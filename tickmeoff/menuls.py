@@ -22,9 +22,10 @@ def resolvepath(*paths):
 
 class BaseListerArgument(menu.EnumArgument):
 
-    def __init__(self, listfunc, name, cwd=None):
+    def __init__(self, listfunc, name, cwd=None, checkexists=True):
         super().__init__(name=name)
         self.basedir = os.path.abspath(os.path.expanduser(cwd or os.curdir))
+        self.checkexists = checkexists
         self.extradir = ''
         self.listfunc = listfunc
 
@@ -65,41 +66,40 @@ class BaseListerArgument(menu.EnumArgument):
         return super().getoptions(filepart)
 
     def parse(self, string):
-        try:
+        if string is not None:
             path = shlex.split(string)[0]
-        except IndexError:
-            raise ValueError() from None
-        else:
             fullpath = resolvepath(self.basedir, path)
-            if self.exists(fullpath):
+            if self.checkexists is False or self.exists(fullpath):
                 args = [path]
                 remainder = string[len(path):].strip()
                 if remainder == '':
                     remainder = None
             else:
                 raise ValueError('path "{}" does not exist'.format(path))
+        else:
+            raise ValueError() from None
         return args, remainder
 
 class DirectoryArgument(BaseListerArgument):
 
-    def __init__(self, name='dir', cwd=None):
-        super().__init__(listfunc=dirs, name=name, cwd=cwd)
+    def __init__(self, name='dir', cwd=None, checkexists=True):
+        super().__init__(listfunc=dirs, name=name, cwd=cwd, checkexists=checkexists)
 
     def exists(self, path):
         return os.path.isdir(path)
 
 class FileArgument(BaseListerArgument):
 
-    def __init__(self, name='file', cwd=None):
-        super().__init__(listfunc=files, name=name, cwd=cwd)
+    def __init__(self, name='file', cwd=None, checkexists=True):
+        super().__init__(listfunc=files, name=name, cwd=cwd, checkexists=checkexists)
 
     def exists(self, path):
         return os.path.isfile(path)
 
 class ListArgument(BaseListerArgument):
 
-    def __init__(self, name='ls', cwd=None):
-        super().__init__(listfunc=ls, name=name, cwd=cwd)
+    def __init__(self, name='ls', cwd=None, checkexists=True):
+        super().__init__(listfunc=ls, name=name, cwd=cwd, checkexists=checkexists)
 
     def exists(self, path):
         return os.path.exists(path)

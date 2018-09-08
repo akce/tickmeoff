@@ -47,8 +47,12 @@ class App:
         m.additem(cm)
         dm = menu.SubMenu(name='debug', rootmenu=m)
         dm.additem(menu.CommandFunc(self.commit))
-        dm.additem(menu.CommandFunc(self.filedownload))
-        dm.additem(menu.CommandFunc(self.fileimport))
+        outfilearg = menuls.FileArgument(name='outpath', checkexists=False)
+        dlargs = menu.CompositeArgument(outfilearg, menu.NoArgument(name='chart.html'))
+        dm.additem(menu.CommandFunc(self.filedownload, dlargs))
+        infilearg = menuls.FileArgument(name='outpath')
+        impargs = menu.CompositeArgument(infilearg, menu.NoArgument(name='chart.html'))
+        dm.additem(menu.CommandFunc(self.fileimport, impargs))
         dm.additem(menu.CommandFunc(self.moviekeys))
         dm.additem(menu.CommandFunc(self.scanfile))
         m.additem(dm)
@@ -56,7 +60,7 @@ class App:
 
     def download(self, *args, **kwargs):
         """ download and import listing """
-        self._import(tickmeoff.download)
+        self._import(tickmeoff.download, None)
         self.db.commit()
 
     def history(self, *args, **kwargs):
@@ -192,11 +196,19 @@ class App:
 
     def filedownload(self, *args, **kwargs):
         """ DEBUG: download chart file and save to chart.html """
-        tickmeoff.dlchart(self.db)
+        if args:
+            outfile = args[0]
+        else:
+            outfile = 'chart.html'
+        tickmeoff.dlchart(self.db, outfile=outfile)
 
     def fileimport(self, *args, **kwargs):
         """ DEBUG: import (only) rankings from local file. Use commit to save changes. """
-        self._import(tickmeoff.fileimport)
+        if args:
+            infile = args[0]
+        else:
+            infile = 'chart.html'
+        self._import(tickmeoff.fileimport, infile)
 
     def moviekeys(self, *args, **kwargs):
         """ DEBUG: List internal movie keys for movies list. """
@@ -210,9 +222,9 @@ class App:
         for key, filename, location in mediafile.scanfiles(self.db, 'filelist.txt'):
             print('{} {}'.format(key, filename))
 
-    def _import(self, func):
+    def _import(self, func, infile='chart.html'):
         """ Internal func for downloading/importing etc. """
-        newmovies, rankings = func(self.db)
+        newmovies, rankings = func(self.db, filename=infile)
         if len(rankings):
             self._printranks(newmovies)
             print('Chart successfully imported: {} new movies'.format(len(newmovies)))

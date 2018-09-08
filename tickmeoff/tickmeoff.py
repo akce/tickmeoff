@@ -25,7 +25,7 @@ def chartiter(charturl='https://imdb.com/chart/top', opener=openurl):
     parser.feed(chartstr)
     yield from iter(parser)
 
-def download(db):
+def download(db, *args):
     return _import(db, list(chartiter()))
 
 def fileimport(db, filename='chart.html'):
