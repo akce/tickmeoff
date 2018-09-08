@@ -9,7 +9,7 @@ if modpath not in sys.path:
     sys.path.insert(0, modpath)
 ## End module path insert.
 
-import bbc.cli as cli
+import tickmeoff.cli as cli
 
 if __name__ == '__main__':
     cli.main()

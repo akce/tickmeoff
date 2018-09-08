@@ -4,7 +4,7 @@ import readline
 import time
 import traceback
 
-from . import bbc
+from . import tickmeoff
 from . import config
 from . import easter
 from . import mediafile
@@ -21,7 +21,7 @@ class App:
         self.menu = self._makemenu()
 
     def _makemenu(self):
-        m = menu.Menu(name='bbc')
+        m = menu.Menu(name='tickmeoff')
         m.additem(menu.CommandFunc(self.download))
         m.additem(menu.CommandFunc(self.history))
         m.additem(menu.CommandFunc(self.movies))
@@ -56,12 +56,12 @@ class App:
 
     def download(self, *args, **kwargs):
         """ download and import listing """
-        self._import(bbc.download)
+        self._import(tickmeoff.download)
         self.db.commit()
 
     def history(self, *args, **kwargs):
         """ list download history """
-        for h in bbc.gethistory(self.db):
+        for h in tickmeoff.gethistory(self.db):
             print('{:<3} {}'.format(h['syncid'], formatsync(h)))
 
     def movies(self, *args, **kwargs):
@@ -111,7 +111,7 @@ class App:
     def missing(self, *args, **kwargs):
         """ list missing media from the latest ranking """
         miss = []
-        for r in bbc.getrankings(self.db):
+        for r in tickmeoff.getrankings(self.db):
             mf = mediafile.getmediafile(self.db, movieid=r['movieid'])
             if mf is None:
                 miss.append(r)
@@ -119,12 +119,12 @@ class App:
 
     def punted(self, *args, **kwargs):
         """ list movies that have been dropped from the rankings """
-        for m in bbc.getpunted(self.db):
+        for m in tickmeoff.getpunted(self.db):
             print('{year} ({i:3}) {title}'.format(year=m['yearmade'], title=m['title'], i=m['indexnum']))
 
     def diffs(self, *args, **kwargs):
         """ list differences in movie rank position """
-        for m in bbc.getdiffs(self.db):
+        for m in tickmeoff.getdiffs(self.db):
             # Format the diff.
             if m['diff'] is None:
                 # New entry
@@ -139,7 +139,7 @@ class App:
 
     def rankings(self, *args, **kwargs):
         """ show latest movie rankings """
-        self._printranks(bbc.getrankings(self.db))
+        self._printranks(tickmeoff.getrankings(self.db))
 
     def configget(self, *args, **kwargs):
         """ show config settings """
@@ -178,7 +178,7 @@ class App:
         playlist.writem3u(config.getconfig(self.db, 'm3ufile')['value'], got)
 
     def _getrankedmedia(self):
-        for r in bbc.getrankings(self.db):
+        for r in tickmeoff.getrankings(self.db):
             mf = mediafile.getmediafile(self.db, movieid=r['movieid'])
             if mf:
                 path = os.path.expanduser(mediafile.getpathr(self.db, mf['locationid']))
@@ -192,11 +192,11 @@ class App:
 
     def filedownload(self, *args, **kwargs):
         """ DEBUG: download chart file and save to chart.html """
-        bbc.dlchart(self.db)
+        tickmeoff.dlchart(self.db)
 
     def fileimport(self, *args, **kwargs):
         """ DEBUG: import (only) rankings from local file. Use commit to save changes. """
-        self._import(bbc.fileimport)
+        self._import(tickmeoff.fileimport)
 
     def moviekeys(self, *args, **kwargs):
         """ DEBUG: List internal movie keys for movies list. """
@@ -288,8 +288,8 @@ def formatsync(lastsync):
 
 def motd(db):
     """ Prints out the message of the day """
-    print('Welcome to The Budge-Board Charts v{}'.format(bbc.__version__))
-    print('Chart last synced {}'.format(formatsync(bbc.getlastsync(db))))
+    print('Welcome to Tick Me Off v{}'.format(tickmeoff.__version__))
+    print('Last synced {}'.format(formatsync(tickmeoff.getlastsync(db))))
     print("Type 'help' for more information.")
 
 def run(db):

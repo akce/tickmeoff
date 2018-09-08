@@ -1,7 +1,7 @@
 """ menuls unit tests. """
 
 # Module under test.
-import bbc.menuls as mls
+import tickmeoff.menuls as mls
 
 import unittest.mock as mock
 import pytest

@@ -1,5 +1,5 @@
 # Module under test.
-from bbc.menu import *
+from tickmeoff.menu import *
 
 import pytest
 

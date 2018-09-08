@@ -1,5 +1,5 @@
 -- -*- mode: SQL; -*-
--- Molly sqlite schema.
+-- Tick-me-off sqlite schema.
 -- Copyright (c) 2018 Acke, see LICENSE file for allowable usage.
 
 CREATE TABLE movie (
@@ -47,5 +47,5 @@ CREATE TABLE config (
 );
 
 -- Global config options, and their defaults.
-INSERT INTO config ('key', 'value', 'description') VALUES ('linkdir', '~/bbc', 'Base chart link directory');
-INSERT INTO config ('key', 'value', 'description') VALUES ('m3ufile', '~/bbc/playlist.m3u', 'Full path to m3u playlist file');
+INSERT INTO config ('key', 'value', 'description') VALUES ('linkdir', '~/tickmeoff', 'Base chart link directory');
+INSERT INTO config ('key', 'value', 'description') VALUES ('m3ufile', '~/tickmeoff/playlist.m3u', 'Full path to m3u playlist file');

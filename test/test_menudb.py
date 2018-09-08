@@ -1,9 +1,9 @@
 """ menudb.py unit tests """
 
 # Module under test.
-import bbc.menudb as mdb
+import tickmeoff.menudb as mdb
 
-import bbc.db as dbmod
+import tickmeoff.db as dbmod
 
 import sqlite3
 import unittest.mock as mock
